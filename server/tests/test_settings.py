@@ -219,17 +219,32 @@ def test_resolve_env_file_prefers_a_cwd_relative_env_over_walking_up(tmp_path, m
     assert _resolve_env_file() == ".env"
 
 
-def test_resolve_env_file_walks_up_from_server_to_find_the_repo_root_env(monkeypatch):
-    # The documented dev workflow: CWD is `server/`, `.env` is one directory
-    # up. No `.env` exists directly in `server/`, so this only passes if the
-    # ancestor walk actually runs and finds the repo-root file.
-    from xxvi.settings import _resolve_env_file
+def test_the_ancestor_walk_finds_a_repo_root_env_from_the_server_directory(tmp_path):
+    """The documented dev workflow: CWD is `server/`, `.env` is one dir up.
 
-    monkeypatch.chdir(SERVER_DIR)
-    assert not (SERVER_DIR / ".env").exists(), "test assumes no .env directly in server/"
+    Built as a synthetic repo rather than run against this one. The previous
+    version asserted `_resolve_env_file()` resolved to the REAL repo's
+    `.env` -- a gitignored file that exists only on a machine where someone
+    has set one up. It passed for the author and failed in CI and on every
+    fresh clone, because `_resolve_env_file` anchors its walk at settings.py
+    and falls back to the bare filename when nothing is found. Same class of
+    bug as the wall-clock go-live test: green locally, red for everyone else.
 
-    resolved = _resolve_env_file()
-    assert Path(resolved).resolve() == (SERVER_DIR.parent / ".env").resolve()
+    `find_upwards` is the mechanism under test, and it takes an explicit
+    anchor, so it can be pointed at a tree this test fully controls -- the
+    same approach the "nothing found anywhere" test below already uses.
+    """
+    from xxvi.pathutils import find_upwards
+
+    (tmp_path / ".git").mkdir()          # the repo-root sentinel
+    (tmp_path / ".env").write_text("DATABASE_URL=postgresql+asyncpg://example/db\n")
+    server_dir = tmp_path / "server"
+    server_dir.mkdir()
+    assert not (server_dir / ".env").exists(), "the walk must be what finds it"
+
+    found = find_upwards(".env", server_dir)
+    assert found is not None
+    assert found.resolve() == (tmp_path / ".env").resolve()
 
 
 def test_resolve_env_file_falls_back_to_bare_filename_when_nothing_is_found(tmp_path, monkeypatch):
@@ -248,13 +263,24 @@ def test_resolve_env_file_falls_back_to_bare_filename_when_nothing_is_found(tmp_
     assert find_upwards(".env", isolated) is None
 
 
-def test_get_settings_reads_the_repo_root_env_file_when_cwd_is_server(monkeypatch):
-    # Confirmed-live regression: with a fully populated .env one directory
-    # up, get_settings().database_url used to silently return the class
-    # default instead. This is the real entrypoint, not just the helper.
-    monkeypatch.chdir(SERVER_DIR)
+def test_get_settings_reads_an_env_file_instead_of_silently_using_defaults(tmp_path, monkeypatch):
+    """Confirmed-live regression: `get_settings().database_url` used to
+    return the class default while a fully populated `.env` sat unread.
+
+    Driven through the real entrypoint, but against an `.env` this test
+    writes itself. It used to rely on the author's own gitignored `.env`
+    being present, so on a clean checkout there was no `.env` anywhere,
+    `database_url` WAS the default, and the assertion inverted -- green
+    locally, red in CI.
+    """
+    get_settings.cache_clear()
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".env").write_text(
+        "DATABASE_URL=postgresql+asyncpg://user:pw@example.invalid/somedb\n"
+    )
 
     settings = get_settings()
+    get_settings.cache_clear()
 
     default_database_url = Settings.model_fields["database_url"].default
     assert settings.database_url != default_database_url
