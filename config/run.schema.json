@@ -1,0 +1,249 @@
+{
+  "$defs": {
+    "CopyBlock": {
+      "properties": {
+        "coming_soon": {
+          "title": "Coming Soon",
+          "type": "string"
+        },
+        "teaser": {
+          "title": "Teaser",
+          "type": "string"
+        },
+        "how_to_play": {
+          "title": "How To Play",
+          "type": "string"
+        },
+        "closing": {
+          "title": "Closing",
+          "type": "string"
+        }
+      },
+      "required": [
+        "coming_soon",
+        "teaser",
+        "how_to_play",
+        "closing"
+      ],
+      "title": "CopyBlock",
+      "type": "object"
+    },
+    "GameSlot": {
+      "properties": {
+        "segment": {
+          "minimum": 1,
+          "title": "Segment",
+          "type": "integer"
+        },
+        "mechanic": {
+          "enum": [
+            "simon",
+            "update",
+            "drift",
+            "trophy_run",
+            "stack"
+          ],
+          "title": "Mechanic",
+          "type": "string"
+        },
+        "params": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "title": "Params",
+          "type": "object"
+        }
+      },
+      "required": [
+        "segment",
+        "mechanic"
+      ],
+      "title": "GameSlot",
+      "type": "object"
+    },
+    "Question": {
+      "properties": {
+        "prompt": {
+          "title": "Prompt",
+          "type": "string"
+        },
+        "accept": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Accept",
+          "type": "array"
+        },
+        "blank": {
+          "default": "",
+          "title": "Blank",
+          "type": "string"
+        },
+        "roast": {
+          "title": "Roast",
+          "type": "string"
+        },
+        "points": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Points"
+        }
+      },
+      "required": [
+        "prompt",
+        "accept",
+        "roast"
+      ],
+      "title": "Question",
+      "type": "object"
+    },
+    "Reward": {
+      "properties": {
+        "id": {
+          "minimum": 1,
+          "title": "Id",
+          "type": "integer"
+        },
+        "after_act": {
+          "minimum": 1,
+          "title": "After Act",
+          "type": "integer"
+        },
+        "label": {
+          "maxLength": 48,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "after_act",
+        "label"
+      ],
+      "title": "Reward",
+      "type": "object"
+    },
+    "Trophy": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "grade": {
+          "enum": [
+            "bronze",
+            "silver",
+            "gold",
+            "platinum"
+          ],
+          "title": "Grade",
+          "type": "string"
+        },
+        "hidden": {
+          "default": false,
+          "title": "Hidden",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "grade"
+      ],
+      "title": "Trophy",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "recipient": {
+      "title": "Recipient",
+      "type": "string"
+    },
+    "acts": {
+      "minimum": 1,
+      "title": "Acts",
+      "type": "integer"
+    },
+    "segments_per_act": {
+      "minimum": 1,
+      "title": "Segments Per Act",
+      "type": "integer"
+    },
+    "questions": {
+      "items": {
+        "$ref": "#/$defs/Question"
+      },
+      "title": "Questions",
+      "type": "array"
+    },
+    "games": {
+      "items": {
+        "$ref": "#/$defs/GameSlot"
+      },
+      "title": "Games",
+      "type": "array"
+    },
+    "trophies": {
+      "items": {
+        "$ref": "#/$defs/Trophy"
+      },
+      "title": "Trophies",
+      "type": "array"
+    },
+    "rewards": {
+      "items": {
+        "$ref": "#/$defs/Reward"
+      },
+      "title": "Rewards",
+      "type": "array"
+    },
+    "copy": {
+      "$ref": "#/$defs/CopyBlock"
+    },
+    "devil_lives": {
+      "default": 3,
+      "minimum": 1,
+      "title": "Devil Lives",
+      "type": "integer"
+    },
+    "question_attempts": {
+      "default": 3,
+      "minimum": 1,
+      "title": "Question Attempts",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "recipient",
+    "acts",
+    "segments_per_act",
+    "questions",
+    "games",
+    "trophies",
+    "rewards",
+    "copy"
+  ],
+  "title": "RunConfig",
+  "type": "object"
+}

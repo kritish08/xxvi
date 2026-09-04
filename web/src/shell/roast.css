@@ -1,0 +1,53 @@
+/* ============================================================
+   Roast — docs/design-system.md is BINDING. A brief, deliberate pause on
+   a wrong answer before the segment restarts. Centred like the code
+   reveal, but a much smaller moment: no border-flourish, no settle-in
+   flourish beyond the shared reveal-style fade.
+   ============================================================ */
+
+.roast {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-tight);
+  text-align: center;
+  background: var(--bg);
+  animation: roastIn var(--slow) var(--ease) both;
+}
+
+@keyframes roastIn {
+  0% {
+    transform: scale(0.98);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.roast__label {
+  color: var(--muted);
+}
+
+.roast__line {
+  font-size: var(--type-h1);
+  max-width: 40ch;
+  margin: 0;
+}
+
+.roast__continue {
+  margin-top: var(--gap-tight);
+  border-color: var(--line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* --slow already collapses to 0.01ms globally (index.css) -- nothing
+     further needed, same as codereveal.css's own note. */
+}

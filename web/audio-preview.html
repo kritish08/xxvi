@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>XXVI — audio bench</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0;
+        padding: 2.5rem;
+        background: #0a0e14;
+        color: #e8edf2;
+        font: 16px/1.6 "IBM Plex Sans", system-ui, sans-serif;
+      }
+      h1 { font-size: 1.25rem; letter-spacing: 0.22em; text-transform: uppercase; margin: 0 0 0.25rem; }
+      p.sub { color: #7c8b9c; margin: 0 0 2rem; max-width: 62ch; }
+      h2 { font-size: 0.8125rem; letter-spacing: 0.22em; text-transform: uppercase; color: #7c8b9c; margin: 2rem 0 0.75rem; }
+      .row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+      button {
+        font: inherit;
+        background: #121821;
+        color: #e8edf2;
+        border: 2px solid #223041;
+        border-radius: 2px;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+      }
+      button:hover { border-color: #2e9bff; }
+      button[disabled] { opacity: 0.4; cursor: default; }
+      button.current { border-color: #2e9bff; color: #2e9bff; }
+      #start { border-color: #2e9bff; color: #2e9bff; font-size: 1.1rem; padding: 0.75rem 1.75rem; }
+      #now { color: #2e9bff; font-family: "IBM Plex Mono", monospace; }
+      .note { color: #7c8b9c; font-size: 0.9rem; max-width: 62ch; }
+    </style>
+  </head>
+  <body>
+    <h1>XXVI — audio bench</h1>
+    <p class="sub">
+      Authoring tool, not part of the run. Nothing here reveals any content —
+      it exists so the music and effects can be judged in seconds instead of
+      by playing eight segments to reach them.
+    </p>
+
+    <button id="start">start audio</button>
+
+    <div id="panel" hidden>
+      <h2>music bed — current: <span id="now">boot</span></h2>
+      <p class="note" id="music-status">checking music files…</p>
+      <p class="note">
+        Nine states, four files: <code>menu</code> (boot, calm, kiddie,
+        question), <code>tense</code> (devil, life-lost), <code>game</code>,
+        <code>triumph</code> (checkpoint, platinum). Drop them at
+        <code>web/public/audio/music/&lt;name&gt;.mp3</code>. States sharing a
+        file do not restart it — they crossfade only when the file changes.
+      </p>
+      <div class="row" id="beds"></div>
+
+
+      <h2>sound effects</h2>
+      <div class="row" id="sfx"></div>
+
+      <h2>narration</h2>
+      <div class="row" id="voice"></div>
+
+      <h2>ducking</h2>
+      <p class="note">
+        Music should drop under a voice line and come back smoothly after.
+        This is the behaviour to check with the volume up.
+      </p>
+      <div class="row" id="duck"></div>
+    </div>
+
+    <script type="module" src="/src/audio-preview.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,133 @@
+/* ============================================================
+   StackTower — ported from the Kyrex coming-soon LayerStacker, restyled
+   entirely onto XXVI's tokens (src/index.css). The original was Tailwind
+   utility classes plus styled-jsx and a Kyrex-specific palette; none of
+   that comes across.
+   ============================================================ */
+
+.stack__title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--type-h1);
+  letter-spacing: var(--track-display);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.stack__readout {
+  display: flex;
+  align-items: baseline;
+  gap: var(--gap);
+  margin: 0;
+  min-height: 1.4em; /* reserved, so the combo appearing never shifts the stage */
+}
+
+.stack__count {
+  font-family: var(--font-mono);
+  font-size: var(--type-body);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  letter-spacing: 0;
+}
+
+.stack__of {
+  color: var(--muted);
+}
+
+.stack__combo {
+  color: var(--accent);
+}
+
+/* The stage. Fixed aspect in abstract units, so the block geometry in
+   StackTower.tsx never has to know anything about layout. */
+.stack__stage {
+  position: relative;
+  width: var(--stage-w);
+  /* STAGE_ROWS in StackTower.tsx — keep the two in step. */
+  height: calc(var(--block-h) * 16);
+  overflow: hidden;
+  border: var(--border) solid var(--line);
+  background: var(--surface);
+}
+
+/* Faint grid, so a narrow block still reads against the ground. Kept very
+   low contrast — §8 bans texture that the codec would turn into noise. */
+.stack__stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, var(--line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.stack__camera {
+  position: absolute;
+  inset: 0;
+  transition: transform var(--base) var(--ease);
+}
+
+.stack__block,
+.stack__active,
+.stack__toppling {
+  position: absolute;
+  height: calc(var(--block-h) - 2px);
+}
+
+/* Placed blocks: filled, quiet. The tower is the record of what he did, so
+   it should be readable at a glance without competing with the live block. */
+.stack__block {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border: 1px solid var(--line);
+  border-top-color: color-mix(in srgb, var(--line) 60%, var(--accent));
+}
+
+.stack__block.is-perfect {
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+  border-top-color: var(--accent);
+}
+
+/* The live block is the only thing with a full accent outline — at any
+   moment exactly one element on this screen is the thing you act on. */
+.stack__active {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  border: var(--border) solid var(--accent);
+}
+
+/* The miss. Tips away so the cause is visible before the segment ends. */
+.stack__toppling {
+  background: color-mix(in srgb, var(--gold) 18%, var(--surface));
+  border: var(--border) solid var(--gold);
+  transform-origin: left top;
+  animation: stack-topple 700ms var(--ease) forwards;
+}
+
+@keyframes stack-topple {
+  from {
+    transform: rotate(0deg) translate(0, 0);
+    opacity: 1;
+  }
+  to {
+    transform: rotate(-28deg) translate(36px, 220px);
+    opacity: 0;
+  }
+}
+
+.stack__hint {
+  font-family: var(--font-mono);
+  font-size: var(--type-label);
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Motion here is information — the block's travel IS the game, and the
+   toppling block is the only statement of why the segment ended. Shorten,
+   never delete (the rule Simon's step timings follow). */
+@media (prefers-reduced-motion: reduce) {
+  .stack__toppling {
+    animation-duration: 300ms;
+  }
+}

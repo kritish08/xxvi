@@ -1,0 +1,42 @@
+# SITE_DOMAIN is supplied by the caddy service's `env_file: .env` in
+# docker-compose.yml. A real public domain (with DNS pointed at this host
+# and 80/443 reachable) gets a real Let's Encrypt certificate automatically.
+# `localhost` or another non-public name gets Caddy's internal CA instead --
+# useful for a local dry run, but browsers will flag it as untrusted; that's
+# expected and fine for testing, not for the night of.
+#
+# SITE_DOMAIN ACCEPTS A LIST, space-separated, and that is how other people
+# on the same network get in. A site block only answers to the names it is
+# addressed by, so with `localhost` alone a request to https://192.168.x.x
+# reached Caddy and got nothing back. Put the machine's LAN address in
+# alongside it:
+#
+#     SITE_DOMAIN=localhost 192.168.1.42
+#
+# Caddy's internal CA will issue for an IP too, so the site loads -- with a
+# browser warning on every device that has not trusted that CA. On a phone
+# that is "Advanced -> proceed"; there is no way around it without a real
+# domain, and for one evening on one network it is the right trade.
+{
+	# A bare IP in a URL sends NO SNI -- the TLS spec forbids it -- so Caddy
+	# has no server name to match a site block against and aborts the
+	# handshake with "internal error". Verified: the certificate for the LAN
+	# address was issued fine and the connection still failed. This gives
+	# SNI-less handshakes a name to fall back on.
+	default_sni localhost
+}
+
+{$SITE_DOMAIN} {
+	encode gzip
+
+	# WebSockets and the API go to FastAPI; everything else is the SPA.
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

@@ -1,0 +1,116 @@
+/* ============================================================
+   Goodbye — the send-off and the shutdown. Centred, unlike every reading
+   screen: this is the trophy pop's register, not the console's.
+   ============================================================ */
+
+.goodbye {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--gap);
+  padding: var(--gap-loose) var(--rail);
+  background: var(--bg);
+}
+
+.goodbye__label {
+  color: var(--muted);
+}
+
+.goodbye__line {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--type-display);
+  letter-spacing: var(--track-display);
+  line-height: 1;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.goodbye__body {
+  color: var(--text);
+  max-width: 46ch;
+  margin: 0;
+}
+
+.goodbye__power {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-tight);
+  margin-top: var(--gap);
+}
+
+.goodbye__glyph {
+  transition: color var(--slow) var(--ease), opacity var(--slow) var(--ease);
+}
+
+.goodbye__glyph.is-live { color: var(--accent); }
+.goodbye__glyph.is-dim { color: var(--muted); opacity: 0.3; }
+
+/* ---- shutdown ---- */
+
+.goodbye--shutdown {
+  justify-content: center;
+  align-items: flex-start;
+  text-align: left;
+  padding-left: var(--rail);
+}
+
+.goodbye__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-tight);
+  font-family: var(--font-mono);
+  font-size: var(--type-body);
+}
+
+.goodbye__step {
+  color: var(--text);
+  animation: goodbye-step var(--base) var(--ease) both;
+}
+
+/* Struck through as the next line lands — the console crossing items off
+   its own list. Colour is not carrying this alone (§9): the line-through
+   is the signal and survives the codec. */
+.goodbye__step.is-done {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+@keyframes goodbye-step {
+  from { opacity: 0; transform: translate3d(0, 6px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+/* ---- off ---- */
+
+.goodbye--off {
+  /* Darker than the console ever gets while it is running. */
+  background: #000;
+  animation: goodbye-blackout var(--slow) var(--ease) both;
+}
+
+.goodbye__until {
+  font-family: var(--font-mono);
+  color: var(--muted);
+  letter-spacing: 0.18em;
+  margin: 0;
+}
+
+@keyframes goodbye-blackout {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .goodbye__step,
+  .goodbye--off {
+    animation-duration: 0.01ms;
+  }
+}

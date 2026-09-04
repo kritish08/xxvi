@@ -1,0 +1,416 @@
+/* ============================================================
+   Console shell — Boot, Activation, ProfileSelect, DifficultySelect,
+   Install, HowToPlay. docs/design-system.md is BINDING; tokens come from
+   src/index.css. This file lays out screens; it does not define tokens.
+   ============================================================ */
+
+/* ---- Shared screen frame: full-bleed, left-rail-anchored, never
+   centred (§2 — centring is reserved for the trophy pop and the platinum
+   moment, neither of which lives here). ---- */
+
+.boot,
+.activation,
+.profiles,
+.difficulty,
+.library,
+.install,
+.howto {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding-left: var(--rail);
+  padding-right: var(--rail);
+  gap: var(--gap);
+}
+
+.boot h1,
+.activation h1,
+.profiles h1,
+.difficulty h1,
+.howto h1,
+.install h1 {
+  font-size: var(--type-h1);
+  max-width: 40ch;
+}
+
+/* Uppercase micro-label above every screen title (§2 — "does more work
+   than any other detail"). */
+.boot__label,
+.activation__label,
+.profiles__label,
+.difficulty__label,
+.install__label,
+.howto__label {
+  color: var(--muted);
+}
+
+/* ---- Buttons: near-square corners, 2px border, selection = scale + ring
+   (never a background-colour swap), no shadows (§2, §5). Focus ring comes
+   from the global :focus-visible rule in index.css. ---- */
+
+button {
+  background: var(--surface);
+  color: var(--text);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.6rem;
+  font-size: var(--type-body);
+  cursor: pointer;
+  transition:
+    transform var(--base) var(--ease),
+    border-color var(--base) var(--ease);
+}
+
+button:hover:not(:disabled),
+button:focus-visible {
+  border-color: var(--accent);
+  transform: scale(1.03);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* ============================================================
+   Boot
+   ============================================================ */
+
+.boot__power {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-tight);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  font-size: var(--type-label);
+  padding: 1.4rem 2.2rem;
+}
+
+.boot__glyph {
+  color: var(--muted);
+  transition: color var(--base) var(--ease);
+}
+
+.boot__glyph.is-active {
+  color: var(--accent);
+}
+
+.boot__status {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-tight);
+}
+
+.boot__status-text {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  font-size: var(--type-label);
+  color: var(--muted);
+}
+
+.boot__status-bar {
+  width: 8rem;
+  height: var(--border);
+  background: var(--line);
+  position: relative;
+  overflow: hidden;
+}
+
+.boot__status-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: var(--accent);
+  transform: translateX(-100%);
+  animation: boot-sweep 1.1s var(--ease) infinite;
+}
+
+@keyframes boot-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+/* A power glyph fading in is a one-shot entrance and stays put; the
+   sweeping bar is the only *looping* motion on this screen, and a loop
+   shrunk toward 0ms strobes — so reduced-motion turns it off outright
+   rather than relying on the shared --fast/--base/--slow shrink. */
+@media (prefers-reduced-motion: reduce) {
+  .boot__status-bar::after {
+    animation: none;
+    transform: translateX(0);
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   Activation
+   ============================================================ */
+
+.activation__input {
+  font-family: var(--font-mono);
+  font-size: var(--type-h1);
+  letter-spacing: 0.08em;
+  background: var(--surface);
+  color: var(--text);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  width: min(20ch, 70vw);
+}
+
+.activation__input:focus-visible {
+  border-color: var(--accent);
+}
+
+.activation__error {
+  font-family: var(--font-ui);
+  font-size: var(--type-label);
+  color: var(--text);
+  min-height: 1.5em;
+  margin: 0;
+}
+
+/* ============================================================
+   ProfileSelect
+   ============================================================ */
+
+.profiles__row {
+  display: flex;
+  gap: var(--gap-loose);
+}
+
+.profile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--gap-tight);
+  min-width: 12rem;
+}
+
+div.profile {
+  cursor: default;
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.6rem;
+}
+
+div.profile:hover {
+  transform: none;
+  border-color: var(--line);
+}
+
+.profile__avatar {
+  width: 4.5rem;
+  height: 4.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+}
+
+.profile--other.is-online .profile__avatar {
+  border-color: var(--accent);
+}
+
+.profile__name {
+  font-size: var(--type-body);
+}
+
+.profile__status {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  font-size: var(--type-label);
+  color: var(--muted);
+}
+
+.profile__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.profile--other.is-online .profile__dot {
+  background: var(--accent);
+}
+
+.profile--other.is-online .profile__status {
+  color: var(--text);
+}
+
+/* ============================================================
+   DifficultySelect — palette swap lives in index.css's
+   :root[data-palette="devil"], driven live by shell/DifficultySelect.tsx.
+   ============================================================ */
+
+.difficulty__row {
+  display: flex;
+  gap: var(--gap);
+}
+
+.difficulty__option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--gap-tight);
+  min-width: 16rem;
+  text-align: left;
+}
+
+.difficulty__option strong {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--type-h1);
+  letter-spacing: var(--track-display);
+}
+
+.difficulty__option span {
+  color: var(--muted);
+  font-size: var(--type-label);
+}
+
+.difficulty__note {
+  color: var(--muted);
+  font-size: var(--type-label);
+}
+
+/* ============================================================
+   Install — the library card is the emotional centre (task-16 brief).
+   ============================================================ */
+
+.boxart__title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--type-display);
+  letter-spacing: var(--track-display);
+  margin: 0;
+}
+
+.boxart__rule {
+  width: 14rem;
+  max-width: 60vw;
+  border: none;
+  border-top: var(--border) solid var(--accent);
+  margin: var(--gap-tight) 0;
+}
+
+.boxart__split {
+  color: var(--muted);
+  margin: 0;
+}
+
+.library__progress {
+  color: var(--muted);
+}
+
+.library__strapline {
+  font-size: var(--type-body);
+  max-width: 40ch;
+}
+
+/* ---- The install bar: transform: scaleX(), never width (§6 motion
+   engineering — width animation forces layout on every frame). ---- */
+
+.install__bar {
+  width: min(32rem, 70vw);
+  height: 0.6rem;
+  background: var(--surface);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.install__fill {
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  will-change: transform;
+}
+
+.install__percent {
+  font-family: var(--font-mono);
+  font-size: var(--type-h1);
+  margin: 0;
+}
+
+.install__subtitle {
+  color: var(--muted);
+}
+
+/* ============================================================
+   HowToPlay
+   ============================================================ */
+
+.howto__line {
+  margin: 0;
+  max-width: 48ch;
+}
+
+.howto__note {
+  color: var(--muted);
+  font-size: var(--type-label);
+}
+
+/* ============================================================
+   Chrome — the quiet "back to fullscreen" affordance and the mute
+   toggle. Fixed, out of document flow, so it never causes layout shift
+   or competes with a screen's own content (§6, "no layout shift, ever").
+   ============================================================ */
+
+.chrome {
+  position: fixed;
+  top: var(--gap-tight);
+  right: var(--gap-tight);
+  display: flex;
+  gap: var(--gap-tight);
+  z-index: 10;
+}
+
+.chrome__button {
+  padding: 0.5rem;
+  display: flex;
+  color: var(--muted);
+  opacity: 0.6;
+  transition:
+    opacity var(--fast) var(--ease),
+    transform var(--base) var(--ease),
+    border-color var(--base) var(--ease);
+}
+
+.chrome__button:hover,
+.chrome__button:focus-visible {
+  opacity: 1;
+  color: var(--text);
+}
+
+.placeholder {
+  padding-left: var(--rail);
+  padding-top: var(--gap);
+  color: var(--muted);
+}

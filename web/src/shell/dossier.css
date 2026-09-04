@@ -1,0 +1,151 @@
+/* ============================================================
+   Profile — an overlay, glanced at mid-run. Same "sits above whatever the
+   run is doing" treatment as CodeReveal and the roast, one tier lower:
+   nothing here changes the run, so it never blocks anything.
+   ============================================================ */
+
+.dossier {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: var(--gap-loose) var(--rail);
+}
+
+.dossier__inner {
+  width: min(64rem, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.dossier__eyebrow {
+  color: var(--muted);
+}
+
+.dossier__name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--type-h1);
+  letter-spacing: var(--track-display);
+  text-transform: uppercase;
+  margin: 0;
+  min-height: 1em; /* holds the line before the fetch lands */
+}
+
+.dossier__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-loose);
+  margin: 0;
+  border-top: var(--border) solid var(--line);
+  border-bottom: var(--border) solid var(--line);
+  padding: var(--gap) 0;
+}
+
+.dossier__stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.dossier__stats dt {
+  color: var(--muted);
+}
+
+.dossier__stats dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--type-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.dossier__of {
+  color: var(--muted);
+}
+
+.dossier__section {
+  color: var(--muted);
+  margin: var(--gap) 0 0;
+}
+
+.dossier__empty {
+  color: var(--muted);
+  margin: 0;
+}
+
+.dossier__answers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.dossier__answers li {
+  border-left: var(--border) solid var(--line);
+  padding-left: var(--gap);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dossier__q {
+  color: var(--muted);
+  margin: 0;
+  max-width: 68ch;
+}
+
+/* The answer is the thing he earned, so it gets the weight — the question
+   above it is context. */
+.dossier__a {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--type-body);
+  color: var(--text);
+}
+
+.dossier__trophies {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-tight);
+}
+
+.dossier__trophy {
+  border: var(--border) solid var(--line);
+  background: var(--surface);
+  padding: var(--gap-tight) var(--gap);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+/* Grade is carried by a border edge as well as by the word, so the four
+   tiers separate without relying on hue alone (§9). */
+.dossier__trophy--bronze { border-left: 6px solid var(--bronze); }
+.dossier__trophy--silver { border-left: 6px solid var(--silver); }
+.dossier__trophy--gold { border-left: 6px solid var(--gold); }
+.dossier__trophy--platinum { border-left: 6px solid var(--platinum); }
+
+.dossier__trophy-name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: var(--track-display);
+}
+
+.dossier__trophy-grade {
+  color: var(--muted);
+}
+
+.dossier__close {
+  align-self: flex-start;
+  margin-top: var(--gap);
+}

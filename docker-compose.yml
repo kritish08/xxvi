@@ -1,0 +1,89 @@
+# Neon is managed Postgres and sits OUTSIDE this stack -- only the app and
+# the TLS-terminating proxy run here. Migrations are run manually against
+# Neon's DIRECT endpoint (never the -pooler one) -- see docs/runbook.md.
+#
+# Both services read secrets from the gitignored `.env` at the repo root
+# via `env_file`. Nothing secret is ever baked into an image layer: the api
+# image contains no .env, and config/run.yaml (the real personal content)
+# is mounted read-only below, never COPYed into the Dockerfile.
+services:
+  # POSTGRES, LOCAL, ON PURPOSE. Neon was measured at ~2s per connection
+  # checkout from here (0.33s for a query on an already-open connection,
+  # 2.08s for the same query with a checkout) and a single GET /api/run
+  # opens three -> a 6 second response for every screen change. Switching to
+  # Neon's -pooler endpoint and dropping pool_pre_ping did not close the gap.
+  #
+  # This is one player, one night, on one laptop, screen-shared. A managed
+  # Postgres in Ohio buys nothing here and costs the entire feel of the
+  # thing. To go back, point DATABASE_URL at the Neon URL kept in .env and
+  # `docker compose up -d` -- nothing else changes.
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: xxvi
+      # Long and random rather than "xxvi". Loopback-only (below) already
+      # removes the network exposure; this is the second layer, because the
+      # one night this runs is a night on whatever network is to hand.
+      POSTGRES_PASSWORD: 8nAOQZfo96YJWeiK3Lb5cz06w7rUgaZi
+      POSTGRES_DB: xxvi
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      # 127.0.0.1, NOT 0.0.0.0. `- "5432:5432"` publishes on every interface,
+      # so anyone on the same wifi could reach this database. Bound to
+      # loopback it is reachable from this machine only, which is all the
+      # host-side alembic/CLI needs.
+      #
+      # For what it is worth the database holds no gift-card codes: the vault
+      # persists only (run_id, reward_id) rows, never a code value (see
+      # xxvi/vault/service.py). The exposure was still wrong.
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U xxvi -d xxvi"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  api:
+    build: ./server
+    # NOT `env_file:`. Compose interpolates `$` in env-file values, and every
+    # argon2 hash is literally `$argon2id$v=19$m=65536,...` — so `$argon2id`,
+    # `$v` and `$m` get expanded to empty strings and the hash arrives mangled.
+    # Verified: the container received `=19=65536,t=3,p=4/...` and every login
+    # returned 401. On the night that means nobody can sign in at all.
+    #
+    # Escaping as `$$` would fix Compose and break the CLI, which reads the same
+    # file directly through pydantic. So instead the file is mounted and the app
+    # reads it itself — one file, one literal meaning, no interpolation layer.
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./config:/app/config:ro     # run.yaml is mounted, never baked into the image
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  caddy:
+    build: ./web
+    env_file: .env               # supplies SITE_DOMAIN to the Caddyfile's {$SITE_DOMAIN}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  db_data:

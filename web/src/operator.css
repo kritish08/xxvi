@@ -1,0 +1,494 @@
+/* ============================================================
+   Operator dashboard — docs/design-system.md is BINDING. This is a tool,
+   not a moment: clarity outranks atmosphere, no palette swap, no trophy
+   theatrics. Flat fills, 2px+ borders, no shadows, no gradients, no blur.
+   Full-bleed, no scrollbars — every section below is sized to fit one
+   viewport rather than to scroll.
+   ============================================================ */
+
+.operator {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 2.5rem var(--rail);
+  gap: var(--gap-tight);
+}
+
+.operator__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex: 0 0 auto;
+}
+
+.operator__title {
+  font-size: clamp(1.75rem, 3vw, 2.75rem);
+  margin: 0.15em 0 0;
+}
+
+.operator__status {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-tight);
+}
+
+.operator__status-dot {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.operator__status-dot--fresh {
+  background: var(--accent);
+}
+
+/* Staleness is a shape+text state, never colour alone (§9) — the dot
+   goes hollow (a ring, not a red fill) and the label spells it out. */
+.operator__status-dot--stale {
+  background: transparent;
+  border: var(--border) solid var(--muted);
+}
+
+/* ---- runs ---- */
+
+.operator__runs {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-tight);
+  min-height: 0;
+  /* SCROLLS. This was `hidden`, inside an `.operator` that is itself
+     `height: 100vh; overflow: hidden` — so anything past the fold was
+     simply clipped and unreachable. The message box at the bottom of a run
+     card could not be got to at all, which is the one control that has to
+     work while he is watching someone play. The header and the rescue
+     footer stay put; only the run list moves. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.operator__empty {
+  color: var(--muted);
+}
+
+.operator__run {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-tight);
+  padding: 1.25rem 1.5rem;
+  background: var(--surface);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+}
+
+.operator__run-head {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-tight);
+}
+
+.operator__difficulty {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--type-label);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.3em 0.7em;
+}
+
+/* Devil/kiddie accent used as a border only — never as text colour on
+   dark (§4's rule, kept even off the DEVIL palette proper). */
+.operator__difficulty--kiddie {
+  border-color: #2e9bff;
+}
+
+.operator__difficulty--devil {
+  border-color: #ff3b30;
+}
+
+.operator__phase {
+  font-size: clamp(1.5rem, 2.6vw, 2.25rem);
+  text-transform: uppercase;
+  letter-spacing: var(--track-display);
+  margin: 0;
+}
+
+/* ---- stats: one horizontal rail, big numbers, no table (§2) ---- */
+
+.operator__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-loose);
+  margin: 0;
+}
+
+.operator__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.operator__stat dt {
+  color: var(--muted);
+}
+
+.operator__stat dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- gate clear: obvious, fast, no confirm step (this is the panic
+   button — every millisecond of friction here is the wrong trade) ---- */
+
+.operator__gates {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.operator__gates > .label {
+  color: var(--muted);
+}
+
+.operator__gate-row {
+  display: flex;
+  gap: var(--gap-tight);
+  flex-wrap: wrap;
+}
+
+.operator__gate-btn {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--type-label);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text);
+  background: var(--surface);
+  border: var(--border) solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0.9em 1.5em;
+  cursor: pointer;
+}
+
+.operator__gate-btn:hover,
+.operator__gate-btn:active {
+  background: var(--line);
+}
+
+.operator__gate-flash {
+  margin: 0;
+  color: var(--text);
+  animation: operator-rise var(--fast) var(--ease) both;
+}
+
+/* ---- rewards: presence is always visible, value never is until asked
+   (this is the rule the whole task hangs on) ---- */
+
+.operator__rewards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-tight);
+}
+
+.operator__reward {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.operator__reward-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-tight);
+  flex-wrap: wrap;
+}
+
+.operator__reward-tag {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--type-label);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.25em 0.6em;
+  color: var(--text);
+}
+
+.operator__reward-tag--released {
+  border-color: var(--accent);
+}
+
+.operator__release-btn,
+.operator__reveal-btn {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--type-label);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text);
+  background: var(--surface);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.6em 1.1em;
+  cursor: pointer;
+}
+
+.operator__release-btn:hover,
+.operator__reveal-btn:hover {
+  border-color: var(--accent);
+}
+
+.operator__reward-note {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* The code, once deliberately revealed. Same treatment as the player's
+   own reveal screen (shell/codereveal.css) — mono, large, selectable. */
+.operator__code {
+  font-family: var(--font-mono);
+  font-size: clamp(1.25rem, 2.4vw, 1.75rem);
+  letter-spacing: 0.06em;
+  color: var(--text);
+  background: var(--bg);
+  border: var(--border) solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0.6rem 1rem;
+  margin: 0;
+  width: fit-content;
+  user-select: all;
+}
+
+/* ---- toast: free text to his screen ---- */
+
+.operator__toast-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.operator__toast-form > .label {
+  color: var(--muted);
+}
+
+.operator__toast-row {
+  display: flex;
+  gap: var(--gap-tight);
+}
+
+.operator__toast-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  background: var(--bg);
+  color: var(--text);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.6em 0.9em;
+}
+
+.operator__toast-input:focus-visible {
+  border-color: var(--accent);
+}
+
+.operator__toast-row button {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--type-label);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text);
+  background: var(--surface);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.6em 1.3em;
+  cursor: pointer;
+}
+
+.operator__toast-row button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.operator__toast-sent {
+  margin: 0;
+  color: var(--muted);
+  animation: operator-rise var(--fast) var(--ease) both;
+}
+
+/* ---- force go-live: isolated on purpose (§ task brief), rare, and
+   caged behind its own confirm ---- */
+
+.operator__danger {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  margin-top: var(--gap);
+  padding-top: 1.25rem;
+  border-top: var(--border) solid var(--line);
+}
+
+.operator__danger > .label {
+  color: var(--muted);
+}
+
+.operator__golive-btn {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--type-label);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text);
+  background: var(--surface);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.6em 1.3em;
+  cursor: pointer;
+}
+
+.operator__golive-btn:hover {
+  border-color: var(--accent);
+}
+
+.operator__forced {
+  margin: 0;
+  color: var(--text);
+}
+
+/* ---- confirm dialogs: centred, like the trophy pop and the code reveal
+   — the two other places §2 permits centring, and this is the same tier
+   of moment (real money, or a skipped unlock, either way irreversible) ---- */
+
+.operator__confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-tight);
+  text-align: center;
+  background: var(--bg);
+  animation: operator-settle var(--base) var(--ease) both;
+}
+
+.operator__confirm-line {
+  font-size: var(--type-h1);
+  max-width: 40ch;
+  margin: 0;
+}
+
+.operator__confirm-warning {
+  color: var(--muted);
+  max-width: 44ch;
+  margin: 0;
+}
+
+.operator__confirm-error {
+  color: var(--text);
+  border-left: var(--border) solid var(--accent);
+  padding-left: var(--gap-tight);
+  margin: 0;
+}
+
+.operator__confirm-actions {
+  display: flex;
+  gap: var(--gap-tight);
+  margin-top: var(--gap-tight);
+}
+
+.operator__confirm-actions button {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--type-label);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text);
+  background: var(--surface);
+  border: var(--border) solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0.85em 2em;
+  cursor: pointer;
+}
+
+.operator__confirm-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.operator__confirm-actions .operator__confirm-cancel {
+  border-color: var(--line);
+}
+
+@keyframes operator-settle {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes operator-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* --fast/--base already collapse to 0.01ms globally (index.css); both
+     keyframes above still land on their full-opacity end state, just
+     without the visible motion. */
+}
+
+/* The bypass. Deliberately looks different from the attempts-reset beside
+   it: that one is routine, this one hands over a gift card and skips the
+   phrase the whole system exists to enforce. --gold rather than the devil
+   palette's red, which §8 bans as text on dark. */
+.operator__gate-label {
+  margin-top: var(--gap);
+  color: var(--muted);
+}
+
+.operator__gate-btn--danger {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* Reset. Reads as destructive without borrowing the bypass's gold — that one
+   is "give him the card", this one is "there is no card". */
+.operator__gate-btn--reset {
+  border-color: var(--muted);
+  color: var(--muted);
+  /* `.operator__gates` is a flex COLUMN, so a lone child stretches to the
+     full card width unless told not to — which is why this read as a
+     giant bar rather than a button. The gate buttons above sit inside
+     `.operator__gate-row` and were never affected. */
+  align-self: flex-start;
+}
+
+.operator__gate-btn--reset:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}

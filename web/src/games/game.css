@@ -1,0 +1,280 @@
+/* ============================================================
+   Game harness — GameHost + every mechanic under games/.
+   docs/design-system.md is BINDING; tokens come from src/index.css.
+   ============================================================ */
+
+/* CENTRED, not left-rail-anchored. The rail rule holds for reading
+   screens, where a left edge gives the eye a consistent start; a game is
+   the opposite — it is a single focal object and it belongs in the middle
+   of the frame. Left-anchored, a 1440px screen put the whole game in a
+   narrow column with the right half empty, which read as an unfinished
+   web page rather than console software. Seen by driving the real app. */
+.game {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  /* Clear of the fixed HUD at the top. */
+  padding: calc(var(--gap-loose) * 2) var(--rail) var(--gap-loose);
+  gap: var(--gap);
+}
+
+.game__label {
+  color: var(--muted);
+}
+
+.game__prompt {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--type-h1);
+  letter-spacing: var(--track-display);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.game__progress {
+  color: var(--muted);
+}
+
+/* Optional gamepad acknowledgement (task 23) — unobtrusive, muted like
+   .game__progress, never the accent colour: this is a small "it worked"
+   note, not a state that competes with the actual game UI. Text only, no
+   layout reservation before it appears — a pad connecting mid-segment
+   must not shift anything else on screen (§6, "no layout shift"), and
+   this line only ever appears below content that's already settled. */
+.game__hint {
+  color: var(--muted);
+  margin: 0;
+  /* Always rendered, never conditionally mounted, so its space is reserved
+     from first paint and detecting a controller mid-game shifts nothing.
+     Fading opacity is also the only transition §6 permits here. */
+  opacity: 0;
+  transition: opacity var(--dur-base, 320ms) var(--ease, ease);
+}
+
+.game__hint[data-visible="true"] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game__hint {
+    transition-duration: 0.01ms;
+  }
+}
+
+/* ---- Face buttons: near-square corners, 2px border, no shadows (§2, §5).
+   The lit state uses a flat fill (compresses well) plus a scale pop and a
+   brighter ring — colour is never the only channel (§9): each button also
+   carries a distinct glyph and its key mapping as text. ---- */
+
+.game__faces {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(8rem, 10rem));
+  gap: var(--gap);
+}
+
+.face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-tight);
+  aspect-ratio: 1;
+  padding: 0;
+  font-size: inherit;
+  background: var(--surface);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  /* transform/opacity/border-color only — never width/height (§6 motion
+     engineering). --fast/--base already collapse to 0.01ms under
+     prefers-reduced-motion (index.css), so this needs no separate query. */
+  transition:
+    transform var(--fast) var(--ease),
+    border-color var(--fast) var(--ease),
+    background-color var(--fast) var(--ease);
+  will-change: transform;
+}
+
+.face:focus-visible {
+  border-color: var(--accent);
+}
+
+.face:disabled {
+  cursor: default;
+}
+
+.face.is-lit {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+  transform: scale(1.06);
+}
+
+.face__glyph {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 4vw, 3.5rem);
+  line-height: 1;
+}
+
+.face__key {
+  color: var(--muted);
+}
+
+.face.is-lit .face__key {
+  color: var(--bg);
+}
+
+
+/* ---- HUD ---------------------------------------------------------------
+   Fixed to the viewport, not to the mechanic — see GameHud.tsx. */
+.hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: var(--gap) var(--rail) 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.hud__row {
+  display: flex;
+  justify-content: center;
+  gap: var(--gap-loose);
+}
+
+.hud__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.hud__key {
+  color: var(--muted);
+}
+
+.hud__value {
+  font-family: var(--font-mono);
+  font-size: var(--type-body);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  line-height: 1;
+}
+
+.hud__of {
+  color: var(--muted);
+}
+
+.hud__pips {
+  display: flex;
+  gap: 0.4rem;
+  /* Matches .hud__value's line box so the three stats sit on one baseline
+     — a HUD that jitters between screens is worse than no HUD. */
+  height: var(--type-body);
+  align-items: center;
+}
+
+.hud__pip {
+  width: 0.7rem;
+  height: 0.7rem;
+  border: var(--border) solid var(--line);
+  border-radius: 50%;
+}
+
+.hud__pip.is-lit {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* The clock, for mechanics that have one. Drains left to right. */
+.hud__timer {
+  margin-top: var(--gap);
+  height: 4px; /* not 1-2px: a hairline does not survive Discord's encoder */
+  background: var(--line);
+  overflow: hidden;
+}
+
+.hud__timer-fill {
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left center;
+  /* transform only, never width (§6) — width relayouts every frame and
+     judders under a 30fps capture. animation-duration comes from the
+     mechanic's own configured duration, set inline. */
+  animation-name: hud-drain;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes hud-drain {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+/* Reduced motion shortens motion elsewhere, but this bar IS the
+   information — collapsing it to 0.01ms would make the clock vanish
+   instantly and the game unreadable. Same "shorten, never delete" rule
+   Simon's step timings follow. */
+@media (prefers-reduced-motion: reduce) {
+  .hud__timer-fill {
+    animation-name: hud-drain;
+  }
+}
+
+/* ---- Simon: turn state, attempts, press feedback ---------------------- */
+
+/* "watch" and "your turn" must not look the same. Pressing during watch is
+   correctly ignored, and without a loud distinction that reads as broken
+   input rather than as "not yet". */
+.simon__turn[data-turn="watch"] {
+  color: var(--muted);
+}
+
+.simon__turn[data-turn="repeat"] {
+  color: var(--accent);
+}
+
+.simon__attempts {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-tight);
+  color: var(--muted);
+  margin: 0;
+}
+
+.simon__pips {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.simon__pip {
+  width: 0.7rem;
+  height: 0.7rem;
+  border: var(--border) solid var(--line);
+  border-radius: 50%;
+}
+
+.simon__pip.is-lit {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Press feedback. A correct press used to produce nothing at all. Shape and
+   weight carry it, not colour alone (§9) — the border thickens either way,
+   so this still reads for anyone who cannot separate the two hues, and it
+   survives Discord's chroma subsampling. */
+.face.is-right {
+  border-color: var(--accent);
+  transform: scale(1.06);
+}
+
+.face.is-wrong {
+  border-color: var(--gold);
+  transform: scale(0.94);
+}

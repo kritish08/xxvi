@@ -1,0 +1,78 @@
+# PRODUCTION, SHARED-HOST VARIANT: for a box that already runs a front
+# proxy (its own Caddy, nginx, Traefik, whatever) in front of other
+# people's sites. Two rules follow from that and shape this whole file:
+#
+#   1. NOTHING BINDS A PUBLIC PORT. The existing front proxy owns
+#      0.0.0.0:80 and :443. XXVI's web container is reached only over a
+#      shared docker network, by that proxy -- see the `front_proxy`
+#      network below and deploy/README.md's "shared case".
+#   2. Postgres is not published at all -- not even on loopback. The local
+#      dev compose maps 127.0.0.1:5432 for host-side alembic; here the
+#      migration is run inside the network instead, so there is no reason
+#      to open a port on a machine other people use.
+#
+# If this box is NOT shared -- nothing else is running on it -- you don't
+# need any of this. Use the plain `docker-compose.yml` at the repo root
+# instead: it binds 80/443 itself and manages its own TLS. See
+# deploy/README.md's "simple case".
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: xxvi
+      POSTGRES_PASSWORD: ${XXVI_DB_PASSWORD}
+      POSTGRES_DB: xxvi
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U xxvi -d xxvi"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  api:
+    build: ../server
+    volumes:
+      # Same mount-not-env_file rule as local: compose interpolates `$` in
+      # env-file values and every argon2 hash contains `$argon2id$v=19$...`.
+      - ../.env:/app/.env:ro
+      - ../config:/app/config:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  web:
+    build: ../web
+    volumes:
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    # Joins the default network (to reach `api`) plus the front proxy's
+    # network (to be reached by it). `FRONT_PROXY_NETWORK` names a docker
+    # network that already exists -- created by the other stack, not this
+    # one -- so it's declared `external: true` rather than something
+    # compose would try to create. See deploy/README.md for how to find
+    # or create that network name.
+    networks:
+      - default
+      - front_proxy
+
+networks:
+  default:
+    name: ${COMPOSE_PROJECT_NAME:-xxvi}_prod
+  front_proxy:
+    external: true
+    name: ${FRONT_PROXY_NETWORK}
+
+volumes:
+  db_data:

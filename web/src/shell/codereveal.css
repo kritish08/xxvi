@@ -1,0 +1,88 @@
+/* ============================================================
+   Code reveal — docs/design-system.md is BINDING. The moment the gift
+   lands: flat, bold, unmissable, no cleverness. Centred, like the trophy
+   pop and the platinum moment — the two other places §2 permits centring —
+   because this is the same tier of moment.
+   ============================================================ */
+
+.reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-tight);
+  text-align: center;
+  background: var(--bg);
+
+  /* A single settle-in, same as everything else — this screen does not
+     retract, fade, or time out on its own (CodeReveal.tsx's own comment). */
+  animation: revealIn var(--slow) var(--ease) both;
+}
+
+@keyframes revealIn {
+  0% {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.reveal__label {
+  color: var(--muted);
+}
+
+.reveal__title {
+  font-size: var(--type-display);
+  margin: 0;
+  max-width: 90vw;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+/* The code itself. Mono, large, selectable — never truncated, never
+   ellipsised. This is the one string on the whole night that has to be
+   read off a compressed Discord stream and typed somewhere else. */
+.reveal__code {
+  font-family: var(--font-mono);
+  font-size: clamp(2rem, 5vw, 4rem);
+  letter-spacing: 0.06em;
+  color: var(--text);
+  background: var(--surface);
+  border: var(--border) solid var(--accent);
+  border-radius: var(--radius);
+  padding: 1rem 2rem;
+  margin: 0;
+  user-select: all;
+  word-break: break-word;
+  max-width: 90vw;
+}
+
+.reveal__actions {
+  display: flex;
+  gap: var(--gap-tight);
+  margin-top: var(--gap-tight);
+}
+
+.reveal__continue {
+  border-color: var(--line);
+}
+
+.reveal__note {
+  color: var(--muted);
+  max-width: 40ch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* --slow already collapses to 0.01ms globally (index.css) — the reveal
+     still settles at full opacity/scale(1) immediately, it just never
+     jumps to a hidden end state, because there isn't one: this screen has
+     no exit animation to begin with. */
+}

@@ -1,0 +1,32 @@
+# --- Secrets. Nothing here is ever committed. ---
+.env
+.env.*
+!.env.example
+
+# The real content: questions, riddle, trophy names, closing message.
+# Keeping it in one ignored file is what makes the later public scrub cheap.
+config/run.yaml
+config/*.local.yaml
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# --- Node ---
+node_modules/
+dist/
+.vite/
+
+# --- OS / editor ---
+.DS_Store
+.idea/
+.vscode/
+
+# Leftover subagent worktrees from the build. Scratch, never content.
+.claude/

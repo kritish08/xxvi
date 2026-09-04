@@ -1,0 +1,76 @@
+/* ============================================================
+   Checkpoint — docs/design-system.md is BINDING. A locked gate must never
+   read as a dead end (see Checkpoint.tsx's own comment) — the alert state
+   below is deliberately not styled as scarier than the rest of the app;
+   it is one more flat panel with a clear next step in it, not a warning
+   screen.
+   ============================================================ */
+
+.checkpoint {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding-left: var(--rail);
+  padding-right: var(--rail);
+  gap: var(--gap-tight);
+}
+
+.checkpoint__label {
+  color: var(--muted);
+}
+
+.checkpoint__title {
+  font-size: var(--type-h1);
+  margin: 0;
+}
+
+.checkpoint__line {
+  max-width: 40ch;
+  margin: 0;
+}
+
+.checkpoint__form {
+  display: flex;
+  gap: var(--gap-tight);
+  margin-top: var(--gap-tight);
+}
+
+.checkpoint__input {
+  font-family: var(--font-mono);
+  font-size: var(--type-h1);
+  letter-spacing: 0.08em;
+  background: var(--surface);
+  color: var(--text);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  width: min(20ch, 70vw);
+}
+
+.checkpoint__input:focus-visible {
+  border-color: var(--accent);
+}
+
+.checkpoint__status {
+  color: var(--text);
+  margin: 0;
+}
+
+/* Never red text on dark (§4's DEVIL rule, and this reads identically in
+   both palettes on purpose) — the alert is the accent as a rule, not the
+   text colour, and the actual reassurance is carried by the words. */
+.checkpoint__alert {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-tight);
+  padding: 0.9rem 1.4rem;
+  border: var(--border) solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  max-width: min(48ch, 84vw);
+  margin: 0;
+}

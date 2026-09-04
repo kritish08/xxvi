@@ -1,0 +1,75 @@
+/* ============================================================
+   Operator toast — a live message from the operator, mid-run
+   (shell/OperatorToast.tsx). Deliberately built on trophy.css's `.toast`
+   primitive (imported by OperatorToast.tsx alongside this file) so it
+   reads as the same *family* of notification the run already trained the
+   eye on — same card, same padding/border treatment, same --toast-enter /
+   --toast-retract tokens (including the shared prefers-reduced-motion
+   override in trophy.css, which collapses these too).
+
+   Every dimension that could get it confused with a trophy pop is
+   deliberately different — see OperatorToast.tsx's header comment:
+   bottom-centre instead of top-centre (the two can never occupy the same
+   pixels even if both queue at once), the palette's accent colour instead
+   of a grade colour, a speech bubble instead of a chalice, "operator"
+   instead of a grade word, and wrapping text instead of a truncated name.
+   ============================================================ */
+
+.toast--operator {
+  top: auto;
+  bottom: 4vh;
+  left: 50%;
+  border-color: var(--accent);
+  animation: operatorToastIn var(--toast-enter) var(--ease) both;
+}
+
+.toast--operator.toast--retracting {
+  animation: operatorToastOut var(--toast-retract) var(--ease) both;
+}
+
+/* Slides UP from below, the mirror of trophy.css's trophyPopIn (which
+   slides DOWN from above) — the opposite motion reinforces that this
+   notification arrives from a different place, for a different reason. */
+@keyframes operatorToastIn {
+  0% {
+    transform: translate(-50%, 100%) scale(1);
+    opacity: 1;
+  }
+  56.25% {
+    /* 180ms of 320ms — same overshoot timing as the trophy pop */
+    transform: translate(-50%, -3%) scale(1.03);
+    opacity: 1;
+  }
+  100% {
+    /* 320ms */
+    transform: translate(-50%, 0%) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes operatorToastOut {
+  0% {
+    transform: translate(-50%, 0%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, 100%) scale(1);
+    opacity: 0;
+  }
+}
+
+.toast__icon--operator {
+  color: var(--accent);
+}
+
+/* A message has no fixed length the way a trophy name does — it wraps
+   rather than truncating to one line (trophy.css's .toast__name is
+   `white-space: nowrap` with an ellipsis; this overrides that). */
+.toast__name--operator {
+  white-space: normal;
+  font-size: clamp(1.125rem, 1.7vw, 1.5rem);
+}
+
+.toast__grade--operator {
+  color: var(--accent);
+}

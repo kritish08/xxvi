@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=./run.schema.json
+recipient: "PLACEHOLDER"
+acts: 2
+segments_per_act: 4
+devil_lives: 3
+
+questions:
+  - { prompt: "What is the capital of France?", accept: ["paris"], blank: "_ _ _ _ _", roast: "That's a landmark you just missed." }
+  - { prompt: "What is the largest planet in our solar system?", accept: ["jupiter"], blank: "_ _ _ _ _ _ _", roast: "Not even close to the biggest swing." }
+  - { prompt: "What color do you get by mixing blue and yellow paint?", accept: ["green"], blank: "_ _ _ _ _", roast: "Art class was apparently optional." }
+  - { prompt: "Which ocean is the largest on Earth?", accept: ["pacific", "pacific ocean", "the pacific", "the pacific ocean"], blank: "_ _ _ _ _ _ _", roast: "Wrong body of water entirely." }
+  - { prompt: "What do bees make that people eat?", accept: ["honey"], blank: "_ _ _ _ _", roast: "Sweet answer. Wrong one." }
+  - { prompt: "What is the tallest mountain in the world?", accept: ["everest", "mount everest", "mt everest", "mt. everest"], blank: "_ _ _ _ _ _ _", roast: "Not the peak you were looking for." }
+  - { prompt: "What is the fastest land animal?", accept: ["cheetah"], blank: "_ _ _ _ _ _ _", roast: "That one couldn't outrun the question." }
+  - { prompt: "What bird is a national symbol of the United States?", accept: ["eagle", "bald eagle", "the bald eagle"], blank: "_ _ _ _ _", roast: "Wrong bird. Try again." }
+
+games:
+  - { segment: 1, mechanic: simon,      params: { length: 4 } }
+  - { segment: 2, mechanic: stack,      params: { target: 8 } }
+  - { segment: 3, mechanic: drift,      params: { duration_ms: 20000, drift_rate: 1.0, hold_ms: 11000 } }
+  - { segment: 4, mechanic: trophy_run, params: { prompts: 6, window_ms: 1200, lives: 3 } }
+  - { segment: 5, mechanic: simon,      params: { length: 7 } }
+  - { segment: 6, mechanic: update,     params: { taps_required: 35 } }
+  - { segment: 7, mechanic: drift,      params: { duration_ms: 25000, drift_rate: 1.8, hold_ms: 16000 } }
+  - { segment: 8, mechanic: trophy_run, params: { prompts: 10, window_ms: 800, lives: 3 } }
+
+trophies:
+  - { id: "game-1",  name: "Simple Simon",         grade: bronze }
+  - { id: "game-2",  name: "Tower Builder",        grade: bronze }
+  - { id: "game-3",  name: "Steady Hands",         grade: bronze }
+  - { id: "game-4",  name: "Quick Reflexes",       grade: bronze }
+  - { id: "game-5",  name: "Simon Says Expert",    grade: silver }
+  - { id: "game-6",  name: "Button Masher",        grade: silver }
+  - { id: "game-7",  name: "Drift Master",         grade: silver }
+  - { id: "game-8",  name: "Trophy Run Champion",  grade: silver }
+  - { id: "question-1", name: "Quick Study",              grade: bronze }
+  - { id: "question-2", name: "Brain Teaser",              grade: bronze }
+  - { id: "question-3", name: "Fact Checker",               grade: bronze }
+  - { id: "question-4", name: "Know-It-All",                grade: bronze }
+  - { id: "question-5", name: "Sharp Mind",                 grade: bronze }
+  - { id: "question-6", name: "Trivia Buff",                grade: bronze }
+  - { id: "question-7", name: "Walking Encyclopedia",       grade: bronze }
+  - { id: "question-8", name: "Final Answer",                grade: bronze }
+  - { id: "act-1",   name: "Act I Complete",   grade: gold }
+  - { id: "act-2",   name: "Act II Complete",  grade: gold }
+  - { id: "platinum", name: "Ran The Whole Thing", grade: platinum }
+  - { id: "hidden-rage-quit",    name: "???", grade: bronze, hidden: true }
+  - { id: "hidden-drift-denier", name: "???", grade: bronze, hidden: true }
+  - { id: "hidden-speedrun",     name: "???", grade: silver, hidden: true }
+
+rewards:
+  - { id: 1, after_act: 1, label: "A message from whoever set this up" }
+  - { id: 2, after_act: 2, label: "One more surprise for finishing the run" }
+
+copy:
+  coming_soon: "The console is warming up. Something is coming."
+  teaser: "Eight rounds. Two acts. One console standing between you and the prize."
+  how_to_play: "Answer trivia and clear the mini-games to earn trophies. Miss too much and the Devil takes over."
+  closing: "That's a wrap. Thanks for playing this demo run of XXVI."

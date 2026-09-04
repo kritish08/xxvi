@@ -1,0 +1,160 @@
+/* ============================================================
+   SystemUpdate — docs/design-system.md §6 (motion), §8 (ban list) are
+   BINDING. Flat fills, 2px+ borders, no shadows, no gradients, no blur.
+
+   Local motion tokens live on :root (not scoped inside .game--update)
+   for the same reason shell/trophy.css's do: a prefers-reduced-motion
+   override also declared on :root can then win the cascade at equal
+   specificity via source order. A selector scoped inside a class would
+   out-specificity that override unconditionally and defeat it.
+   ============================================================ */
+
+:root {
+  /* How long the bar's fill takes to catch up to a new percent. The
+     setback gets its own, longer duration than an ordinary tap — the
+     drop needs to be FELT ("slightly cruel, not instant"), where a
+     normal climb just needs to read as responsive. */
+  --update-climb-ms: 260ms;
+  --update-drop-ms: 640ms;
+  --update-flash-ms: 220ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Shorten, never delete (a sibling task shipped the opposite bug: a
+     component that disappeared entirely under reduced motion). The bar
+     still jumps to the correct value and the flash still appears —
+     only the duration of getting there collapses. */
+  :root {
+    --update-climb-ms: 0.01ms;
+    --update-drop-ms: 0.01ms;
+    --update-flash-ms: 0.01ms;
+  }
+}
+
+.game--update {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* Centred with .game — see game.css. This used to be flex-start,
+     which is what put the whole game in a narrow left column with
+     the right half of the screen empty. */
+  align-items: center;
+  padding-left: var(--rail);
+  padding-right: var(--rail);
+  gap: var(--gap);
+}
+
+.game__eyebrow {
+  color: var(--muted);
+}
+
+.update__title {
+  font-size: var(--type-h1);
+  max-width: 40ch;
+}
+
+/* ---- The bar: transform: scaleX(), never width (§6 — width forces
+   layout and paint on every frame). transform-origin is a one-time
+   style, so it lives here rather than being set per-frame in JS. ---- */
+
+.update__bar {
+  position: relative;
+  width: min(40rem, 70vw);
+  height: 2rem;
+  background: var(--surface);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.update__fill {
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  will-change: transform;
+  transition: transform var(--update-climb-ms) var(--ease);
+}
+
+/* During a setback the same element takes the longer, "felt" duration —
+   this is what makes the drop read as a drop and not a glitch. */
+.game--update-setback .update__fill {
+  transition-duration: var(--update-drop-ms);
+}
+
+.update__percent {
+  font-family: var(--font-mono);
+  font-size: var(--type-h1);
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+
+.update__button {
+  background: var(--surface);
+  color: var(--text);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.8rem;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--type-body);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  /* Selection = scale + ring, never a background-colour swap (§2). */
+  transition:
+    transform var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+
+.update__button:hover,
+.update__button:focus-visible {
+  border-color: var(--accent);
+  transform: scale(1.03);
+}
+
+.update__button:active {
+  transform: scale(0.98);
+}
+
+.update__key {
+  opacity: 0.65;
+  font-family: var(--font-mono);
+  font-size: 0.75em;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* A left accent rule does the emphasis work a shadow would elsewhere in
+   the system (§5 — "Shadows: none"). Text stays --text, never red, even
+   in DEVIL (§4's rule against red text on dark). */
+.update__flash {
+  margin: 0;
+  padding-left: var(--gap-tight);
+  border-left: var(--border) solid var(--line);
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: var(--type-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  opacity: 0;
+  transition:
+    opacity var(--update-flash-ms) var(--ease),
+    border-color var(--update-flash-ms) var(--ease);
+}
+
+.game--update-setback .update__flash {
+  opacity: 1;
+  border-color: var(--accent);
+}
+
+.update__count {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}

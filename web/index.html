@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Deliberately generic: the tab title is visible to an anonymous
+         visitor before any gate, so it gets the same "reveal nothing" rule
+         as the coming-soon page itself (docs/design-system.md; task-15). -->
+    <title>not yet.</title>
+
+    <!-- Self-hosted, preloaded, font-display: block (see src/index.css) —
+         nothing here depends on a third-party request, and nothing may
+         swap in mid-boot and reflow the console illusion. -->
+    <link rel="preload" href="/fonts/archivo-expanded-800.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/ibm-plex-sans-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/ibm-plex-sans-600.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/ibm-plex-mono-500.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

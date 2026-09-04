@@ -1,0 +1,26 @@
+# PRODUCTION, SHARED-HOST VARIANT. Plain HTTP on :80, no TLS, no domain.
+#
+# This is the Caddyfile for a box that already has a public front proxy
+# (its own Caddy, nginx, Traefik...) bound to 0.0.0.0:80 and :443 in front
+# of several other people's sites. Binding those ports again is impossible
+# and taking them would break everything else on the machine, so XXVI sits
+# BEHIND that proxy: the front proxy terminates TLS for the real public
+# domain and reverse-proxies to this container over the shared docker
+# network (see docker-compose.prod.yml's `front_proxy` network).
+#
+# `:80` rather than a domain name on purpose -- this server answers whatever
+# Host header the front proxy passes through, and it must never try to get
+# its own certificate for a name the front proxy already holds one for.
+:80 {
+	encode gzip
+
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

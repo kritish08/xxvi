@@ -1,0 +1,127 @@
+/* ============================================================
+   The "gate": the coming-soon screen and the login form beneath it.
+   Owned by ComingSoon.tsx / Login.tsx (docs/design-system.md is BINDING).
+
+   This is the *only* screen an anonymous visitor ever sees, so it is
+   deliberately generic -- no box art, no title treatment, nothing that
+   reads as "console software" the way the authenticated shell does. Same
+   tokens, same restraint, different job.
+   ============================================================ */
+
+/* THE DISPLAY FACE HAD NEVER RENDERED ANYWHERE ON THIS SCREEN. This is the
+   largest text on the first thing anyone sees, and it was set in the body
+   font: Archivo Expanded downloaded on every visit, was never applied to a
+   single glyph, and `document.fonts.check('800 3rem "Archivo Expanded"')`
+   returned false on the live page. The whole typographic identity was
+   loading and then not being used. */
+.gate__message {
+  max-width: 42ch;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: var(--track-display);
+  font-size: var(--type-h1);
+  line-height: 1.25;
+  color: var(--text);
+  animation: gate-rise var(--base) var(--ease) both;
+}
+
+.gate__countdown-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-tight);
+  margin-top: var(--gap-loose);
+  animation: gate-rise var(--base) var(--ease) both;
+  animation-delay: var(--fast);
+}
+
+.gate__countdown-label {
+  color: var(--muted);
+}
+
+.gate__countdown {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: var(--type-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+@keyframes gate-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* ---- login ---- */
+
+.gate__login {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--gap);
+  max-width: 22rem;
+  margin-top: var(--gap-loose);
+  animation: gate-rise var(--base) var(--ease) both;
+  animation-delay: var(--fast);
+}
+
+.gate__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-tight);
+  width: 100%;
+}
+
+.gate__field .label {
+  color: var(--muted);
+}
+
+.gate__input {
+  width: 100%;
+  background: var(--surface);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--type-body);
+  padding: 0.6em 0.9em;
+}
+
+.gate__input:focus-visible {
+  border-color: var(--accent);
+}
+
+.gate__submit {
+  background: var(--surface);
+  border: var(--border) solid var(--accent);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--type-label);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  padding: 0.85em 2em;
+  cursor: pointer;
+}
+
+.gate__submit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.gate__error {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--type-body);
+  color: var(--text);
+  border-left: var(--border) solid var(--accent);
+  padding-left: var(--gap-tight);
+}

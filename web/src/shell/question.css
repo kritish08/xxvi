@@ -1,0 +1,139 @@
+/* ============================================================
+   Question — docs/design-system.md is BINDING. Free-text recall, not
+   multiple choice. Left-rail-anchored, flat, no shadows/gradients.
+   ============================================================ */
+
+.question {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding-left: var(--rail);
+  padding-right: var(--rail);
+  gap: var(--gap-tight);
+}
+
+.question__label {
+  color: var(--muted);
+}
+
+.question__prompt {
+  font-size: var(--type-h1);
+  max-width: 40ch;
+  margin: 0;
+}
+
+/* `blank` is a display hint ("____ __"), not a form control — mono like
+   every other fill-in-the-slot surface (§3: "Product key entry,
+   redemption codes, the countdown"). */
+.question__blank {
+  font-family: var(--font-mono);
+  font-size: var(--type-body);
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* The attempts line. Always occupies its row (the component renders an
+   nbsp when idle) so getting one wrong never shifts the prompt — §6, "no
+   layout shift, ever". Colour, never red-on-dark: §8 bans it outright
+   because Discord's chroma subsampling smears saturated red into mush at
+   exactly the size this text is set. `--warn` reads as urgency and
+   survives the codec. */
+.question__attempts {
+  color: var(--muted);
+  margin: 0;
+  min-height: 1.2em;
+}
+
+.question__attempts[data-missed="true"] {
+  color: var(--warn);
+}
+
+.question__form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--gap);
+  margin-top: var(--gap-tight);
+  width: 100%;
+}
+
+.question__input {
+  font-family: var(--font-mono);
+  font-size: var(--type-h1);
+  background: var(--surface);
+  color: var(--text);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  width: min(28ch, 80vw);
+}
+
+.question__input:focus-visible {
+  border-color: var(--accent);
+}
+
+/* ---- Devil confirm step: the one thing this task exists to get right.
+   A flat inset panel — never a modal, never a blur — that echoes back
+   exactly what will be submitted before it can cost a life. ---- */
+
+.question__confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--gap-tight);
+  padding: 1.25rem 1.75rem;
+  background: var(--surface);
+  border: var(--border) solid var(--accent);
+  border-radius: var(--radius);
+  max-width: min(48ch, 84vw);
+
+  /* A one-shot entrance, same easing as everything else — never a full-
+     screen flash (§6). */
+  animation: questionConfirmIn var(--base) var(--ease) both;
+}
+
+@keyframes questionConfirmIn {
+  0% {
+    transform: translateY(-0.5rem);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.question__confirm-label {
+  color: var(--muted);
+}
+
+/* The exact string that will be sent. Mono, large, unmissable — the whole
+   point of this panel is that a typo is visible here before it costs
+   anything. */
+.question__confirm-value {
+  font-family: var(--font-mono);
+  font-size: var(--type-h1);
+  word-break: break-word;
+  margin: 0;
+}
+
+.question__confirm-stakes {
+  color: var(--text);
+  margin: 0;
+}
+
+.question__confirm-actions {
+  display: flex;
+  gap: var(--gap-tight);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* --base already collapses to 0.01ms globally (index.css); the confirm
+     panel still renders at its settled, fully legible state — nothing
+     here disappears, per the task brief's explicit warning about a
+     sibling task's reduced-motion regression. */
+}
