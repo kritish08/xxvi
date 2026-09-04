@@ -49,8 +49,8 @@ trophies:
   - { id: "hidden-speedrun",     name: "???", grade: silver, hidden: true }
 
 rewards:
-  - { id: 1, after_act: 1, label: "A message from whoever set this up" }
-  - { id: 2, after_act: 2, label: "One more surprise for finishing the run" }
+  - { id: 1, after_act: 1, label: "A note from whoever set this up" }
+  - { id: 2, after_act: 2, label: "One more, for finishing the run" }
 
 copy:
   coming_soon: "The console is warming up. Something is coming."

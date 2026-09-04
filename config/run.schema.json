@@ -126,7 +126,7 @@
           "type": "integer"
         },
         "label": {
-          "maxLength": 48,
+          "maxLength": 32,
           "minLength": 1,
           "title": "Label",
           "type": "string"

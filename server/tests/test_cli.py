@@ -60,12 +60,19 @@ def test_cli_module_imports_nothing_from_the_http_layer_or_the_hub():
         )
 
 
-def test_normalize_activation_candidate_matches_the_clients_formatKey():
-    # Must mirror web/src/shell/Activation.tsx's formatKey exactly: upper,
-    # strip non-alphanumerics, group into 4s.
-    assert cli_module._normalize_activation_candidate("answerword12") == "ANSW-ERWO-RD12"
-    assert cli_module._normalize_activation_candidate("ANSW-ERWO-RD12") == "ANSW-ERWO-RD12"
-    assert cli_module._normalize_activation_candidate("  Answer Word12 ") == "ANSW-ERWO-RD12"
+def test_normalize_activation_candidate_matches_the_clients_canonicalKey():
+    # Must mirror web/src/shell/Activation.tsx's `canonicalKey` exactly:
+    # upper, strip non-alphanumerics, and STOP -- no re-grouping into 4s.
+    #
+    # This test previously asserted the dashed "ANSW-ERWO-RD12", because both
+    # it and the code believed the client posted the dashed form. It does not:
+    # `displayKey` dashes what you SEE, while the submit handler sends
+    # `canonicalKey(value)`. Test and code agreed with each other and were
+    # both wrong about the client, so the suite stayed green while the front
+    # door could never open. Caught by driving the real browser.
+    assert cli_module._normalize_activation_candidate("answerword12") == "ANSWERWORD12"
+    assert cli_module._normalize_activation_candidate("ANSW-ERWO-RD12") == "ANSWERWORD12"
+    assert cli_module._normalize_activation_candidate("  Answer Word12 ") == "ANSWERWORD12"
 
 
 def test_normalize_activation_candidate_refuses_a_length_the_client_could_never_produce():
@@ -116,8 +123,9 @@ async def test_hash_secret_activation_mode_round_trips_through_the_real_gate(
     run = await RunRepository(sessionmaker).create(account.id, Difficulty.KIDDIE)
     service = GateService(RunRepository(sessionmaker), settings)
 
-    # Exactly what Activation.tsx's formatKey produces and POSTs.
-    assert await service.submit(run.id, GateId.ACTIVATION, "ANSW-ERWO-RD12") is GateOutcome.OK
+    # Exactly what Activation.tsx's submit handler POSTs: canonicalKey(value),
+    # which strips the dashes. The dashed form is display-only.
+    assert await service.submit(run.id, GateId.ACTIVATION, "ANSWERWORD12") is GateOutcome.OK
 
 
 async def test_cmd_release_emits_a_real_code_with_production_ready_config(
@@ -462,3 +470,33 @@ def test_the_committed_schema_is_in_sync_with_the_model():
         (Path(__file__).parents[2] / "config" / "run.schema.json").read_text()
     )
     assert committed == RunConfig.model_json_schema()
+
+
+def test_the_activation_hash_matches_what_the_web_client_actually_sends():
+    """The front door has no bypass, so a mismatch here is unrecoverable.
+
+    `web/src/shell/Activation.tsx` keeps two forms: `displayKey` inserts
+    dashes for what the player SEES, but the submit handler posts
+    `canonicalKey(value)` -- the bare twelve characters. An earlier version
+    of `_normalize_activation_candidate` hashed the DASHED form on the
+    stated belief that it was what the client sent. It was not, and the
+    result was an activation gate that could never open, said nothing about
+    why, and had no operator override. This pins the two together.
+    """
+    from xxvi.auth.passwords import hash_password, verify_password
+    from xxvi.cli import _normalize_activation_candidate
+
+    # Exactly what canonicalKey() produces for any of these inputs.
+    for typed in ("DEMO12345678", "demo-1234-5678", "##demo 1234 5678##"):
+        assert _normalize_activation_candidate(typed) == "DEMO12345678"
+
+    minted = hash_password(_normalize_activation_candidate("demo-1234-5678"))
+    what_the_client_posts = "DEMO12345678"
+    assert verify_password(what_the_client_posts, minted)
+
+
+def test_the_activation_normaliser_still_refuses_a_wrong_length_answer():
+    from xxvi.cli import _normalize_activation_candidate
+
+    assert _normalize_activation_candidate("TOOSHORT") is None
+    assert _normalize_activation_candidate("WAYTOOLONGFORTHIS") is None

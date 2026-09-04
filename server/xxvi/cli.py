@@ -79,12 +79,22 @@ def _content_placeholder_offenders(config: RunConfig) -> list[str]:
 
 
 def _normalize_activation_candidate(raw: str) -> str | None:
-    """Mirror web/src/shell/Activation.tsx's `formatKey` EXACTLY: uppercase,
-    strip every character that isn't A-Z0-9, then re-group into
-    `XXXX-XXXX-XXXX`. That dashed string -- not the bare 12 characters --
-    is what the client actually POSTs, and `gates/service.py`'s
-    `candidate.strip().upper()` does not strip dashes. So the activation
-    gate's hash must be of the dashed form, or activation never passes.
+    """Mirror web/src/shell/Activation.tsx's `canonicalKey` EXACTLY: uppercase,
+    then strip every character that isn't A-Z0-9. The result is the BARE
+    twelve characters, with NO dashes.
+
+    This used to re-group the result into `XXXX-XXXX-XXXX` and hash that,
+    on the stated belief that "the dashed string is what the client
+    actually POSTs". That belief was wrong, and it is worth being precise
+    about why, because the failure it caused is silent and total.
+    `Activation.tsx` keeps TWO forms: `displayKey` inserts the dashes for
+    what you SEE in the input, but the submit handler sends
+    `canonicalKey(value)` -- the undashed twelve. So a hash minted from the
+    dashed form can never match what the gate receives, and the front door
+    simply never opens: it does not lock, there is no operator bypass, and
+    nothing in the UI says why. Verified by observation, not by reading:
+    with a dashed hash in place the browser reported "that key isn't
+    valid" while an identical curl of the dashed string succeeded.
 
     Returns `None` (a refusal, not a silent best-effort) if fewer or more
     than exactly 12 alphanumeric characters survive cleaning -- that is
@@ -95,7 +105,7 @@ def _normalize_activation_candidate(raw: str) -> str | None:
     cleaned = re.sub(r"[^A-Z0-9]", "", raw.strip().upper())
     if len(cleaned) != 12:
         return None
-    return "-".join(cleaned[i : i + 4] for i in range(0, 12, 4))
+    return cleaned
 
 
 def cmd_hash_secret(*, activation: bool = False) -> None:
@@ -118,10 +128,12 @@ def cmd_hash_secret(*, activation: bool = False) -> None:
                 "Recheck the riddle answer."
             )
             raise SystemExit(1)
-        # Show the operator the literal string being hashed -- the exact
-        # value the real client will send, dashes included, so there is no
-        # ambiguity about what this hash actually gates.
-        print(f"hashing the literal string the client will send: {normalized}")
+        # Show BOTH forms, labelled, so there is no ambiguity about which
+        # one is hashed: the player sees the dashed form in the input box,
+        # but the client submits the undashed one, and that is what gates.
+        dashed = "-".join(normalized[i : i + 4] for i in range(0, 12, 4))
+        print(f"he will see and type:      {dashed}")
+        print(f"the client actually sends: {normalized}   <- this is what is hashed")
         print(hash_password(normalized))
         return
 

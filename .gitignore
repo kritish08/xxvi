@@ -2,6 +2,9 @@
 .env
 .env.*
 !.env.example
+# A complete, deliberately-public demo config. Safe to ship: check-config
+# refuses to pass with its values in place. See its own header.
+!.env.demo
 
 # The real content: questions, riddle, trophy names, closing message.
 # Keeping it in one ignored file is what makes the later public scrub cheap.

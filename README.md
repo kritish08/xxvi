@@ -18,51 +18,55 @@ the whole run). Five minigame mechanics: `simon`, `stack`, `drift`,
 
 ## Quickstart: play the demo
 
-No editing of game content is required to try this — `config/run.yaml`
-(the real, personal content) is gitignored and never shipped; if it's
-absent the server automatically serves `config/run.example.yaml`, a
-genuinely playable two-act demo, and says so loudly in its logs. You do
-need to fill in a handful of secrets in `.env`, since nothing sensitive
-ships pre-filled:
+Four commands, no hashing, no editing. Verified end to end on a clean
+machine — including the ordering, which matters.
 
 ```bash
-git clone <this-repo-url>
-cd birthday-fun
-cp .env.example .env
+git clone <this-repo-url> && cd birthday-fun
+cp .env.demo .env
+
+docker compose up -d db                              # database first
+docker compose run --rm api alembic upgrade head     # then the schema
+docker compose up -d --build                         # then everything else
 ```
 
-Generate a session secret and a demo login (this uses the `api` image's
-own CLI, so no local Python install is needed):
+**Run the migration before starting the api.** The api queries `accounts` at
+startup, so against an empty database it crash-loops with `relation
+"accounts" does not exist` — a confusing first impression that looks like a
+broken image rather than a missing step. Bringing `db` up alone, migrating,
+then starting the rest avoids it entirely.
 
-```bash
-docker compose build api
-openssl rand -hex 32                                    # -> SESSION_SECRET
-echo 'demo-password' | docker compose run --rm api python -m xxvi.cli hash-secret
-                                                          # -> PLAYER_PASSWORD_HASH
-echo 'demo-password' | docker compose run --rm api python -m xxvi.cli hash-secret
-                                                          # -> OPERATOR_PASSWORD_HASH
-```
+Then open **http://localhost** and sign in:
 
-Paste those into `.env` (`SESSION_SECRET`, `PLAYER_USERNAME`,
-`PLAYER_PASSWORD_HASH`, `OPERATOR_USERNAME`, `OPERATOR_PASSWORD_HASH`), set
-`SITE_DOMAIN=localhost`, then bring the stack up:
+| | |
+|---|---|
+| player | `player` / `demo` |
+| operator | `operator` / `demo` |
+| product key | `DEMO-1234-5678` |
+| checkpoint code | `DEMO` (both acts) |
 
-```bash
-docker compose up -d --build
-```
+The player signs in, powers on the console, enters the product key, picks a
+profile and a difficulty, and plays. The operator dashboard is the
+gift-giver's side: it watches the run live and releases a code when an act is
+cleared. Log in as the operator in a second browser to see both halves at
+once.
 
-Visit `https://localhost` and log in as the player account to play the
-demo; the operator dashboard lives behind the operator account on the same
-host. Caddy's internal CA issues a certificate for `localhost` automatically
-in this mode — browsers will flag it as untrusted, which is expected for a
-local run (see the comment at the top of `Caddyfile`).
+`.env.demo` is a complete, deliberately public, deliberately weak
+configuration. It is safe to ship because it cannot be used for a real run by
+accident — `python -m xxvi.cli check-config` refuses to pass with its values
+in place, so the preflight that gates a real release fails loudly rather than
+letting a real gift ride on demo credentials.
 
-`.env.example`'s default `GO_LIVE_ISO` is already in the past, so the demo
-run is live immediately — no waiting on a countdown.
+It serves **plain HTTP on localhost on purpose.** Point `SITE_DOMAIN` at
+`localhost` over HTTPS and Caddy mints a certificate from its own internal
+CA, so the demo opens behind a full-page browser security warning. For a real
+deployment set a real domain and Caddy provisions a genuine certificate
+automatically.
 
-*This sequence is written from reading the compose/Dockerfiles rather than
-from a fresh-clone run in this session — if a step is off, the compose
-files and `docs/runbook.md` are the source of truth to reconcile against.*
+No game content needs editing to try this. `config/run.yaml` (the real,
+personal content) is gitignored and never shipped; with it absent the server
+serves `config/run.example.yaml` — a complete, finishable two-act demo — and
+says so in its logs.
 
 ## Make it yours
 

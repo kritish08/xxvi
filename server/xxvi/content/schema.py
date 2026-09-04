@@ -75,7 +75,14 @@ class Reward(BaseModel):
     # with no truncation and no ellipsis -- see web/src/shell/codereveal.css.
     # The limit is a rendering constraint, so it is enforced where a bad value
     # can still be fixed cheaply: config load, not the reveal itself.
-    label: str = Field(min_length=1, max_length=48)
+    #
+    # 32, not the 48 this started at. Measured in a real browser against the
+    # actual `.reveal__title` rule rather than reasoned about: at a 1470px
+    # viewport the shipped label ("₹1,000 PlayStation Network", 26 chars) wraps
+    # to 3 lines, 36 chars to 4, and 48 to 5 -- and on a 390px phone a 48-char
+    # label ran to fifteen. Three lines is what actually shipped and read well,
+    # so the bound sits just above the label that proved it.
+    label: str = Field(min_length=1, max_length=32)
 
 
 class CopyBlock(BaseModel):
