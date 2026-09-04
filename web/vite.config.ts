@@ -35,5 +35,18 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./tests/setup.ts"],
+    // Vitest's default is 5000ms, which is not a margin for this suite --
+    // several games run on REAL timers because they animate, and the tests
+    // drive them at real speed on purpose. SimonSays alone spends
+    // STEP_MS * (length + 1) just showing the sequence: ~1.84s before
+    // "your turn" appears for a length-3 run, before a single key is
+    // pressed. Individual `waitFor` calls are themselves allowed 5000ms,
+    // so one of them could consume the entire default budget on its own.
+    //
+    // That is exactly what happened: green locally, red in CI with
+    // "Test timed out in 5000ms" on a runner executing 33 test files at
+    // once. The tests were never wrong -- the budget was.
+    testTimeout: 20000,
+    hookTimeout: 20000,
   },
 });
