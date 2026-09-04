@@ -1,7 +1,7 @@
 # XXVI
 
-XXVI is a desktop web experience disguised as a PlayStation console, built
-as a birthday gift for one person: he boots what looks like a PS console,
+XXVI is a desktop web experience disguised as a game console, built
+as a birthday gift for one person: he boots what looks like a console UI,
 finds a library holding one game he's never seen, sitting at 0%, and clears
 it to reach a Platinum trophy. It ran once, live, at midnight, for a real
 person, and the gift it unlocked was real. This repository is that system,

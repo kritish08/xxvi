@@ -575,6 +575,14 @@ export interface components {
             copy: components["schemas"]["CopyView"];
             /** Trophies */
             trophies: components["schemas"]["TrophyView"][];
+            /** Operator */
+            operator: string;
+            /** Title */
+            title: string;
+            /** Strapline */
+            strapline: string;
+            /** Recipient */
+            recipient: string;
         };
         /** CopyView */
         CopyView: {
@@ -619,6 +627,21 @@ export interface components {
         };
         /**
          * GateId
+         * @description The two gates that are always exactly one apiece, regardless of
+         *     `acts`: the front door (ACTIVATION) and -- for callers that still need
+         *     a concrete member, e.g. `operator_routes.UnlockGateRequest`'s Pydantic
+         *     field and `run_service.submit_activation`'s `GateId.ACTIVATION` --
+         *     kept intact rather than deleted.
+         *
+         *     Checkpoint gates are NOT enumerated here any more: with `acts`
+         *     configurable, the set of checkpoint gates follows `config.acts`, not a
+         *     fixed count of two. `checkpoint_gate(act)` below computes those ids
+         *     instead. CHECKPOINT_1 / CHECKPOINT_2 remain as members purely because
+         *     existing callers (tests, `operator_routes`) already reference them and
+         *     the strings they produce ("checkpoint_1", "checkpoint_2") are identical
+         *     to what `checkpoint_gate(1)` / `checkpoint_gate(2)` produce -- a
+         *     `GateId.CHECKPOINT_1` and the string `"checkpoint_1"` are the same value
+         *     everywhere a gate id is compared, stored or looked up.
          * @enum {string}
          */
         GateId: "activation" | "checkpoint_1" | "checkpoint_2";

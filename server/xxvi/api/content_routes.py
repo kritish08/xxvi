@@ -41,18 +41,31 @@ class ContentView(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     copy_block: CopyView = Field(alias="copy")
     trophies: list[TrophyView]
+    # Identity: who the operator and recipient are, and the run's own
+    # title/strapline. Same payoff tier as trophy names and `how_to_play`
+    # -- see `_bare()`, which is the one place that withholds all four from
+    # anyone who hasn't earned the full payload.
+    operator: str
+    title: str
+    strapline: str
+    recipient: str
 
 
 def _bare(config: RunConfig, *, teaser: str = "") -> ContentView:
     """The restricted shape: `coming_soon` (and optionally `teaser`) only,
     no trophy names, no `how_to_play`, no closing message, no trophies at
-    all. Used for both tiers below `full` -- anonymous and
+    all, and none of the identity fields (operator/title/strapline/
+    recipient). Used for both tiers below `full` -- anonymous and
     authenticated-but-not-yet-live -- so there is exactly one place that
     defines "what a caller who hasn't earned the real payload gets".
     """
     return ContentView(
         copy=CopyView(coming_soon=config.copy.coming_soon, teaser=teaser, how_to_play="", closing=""),
         trophies=[],
+        operator="",
+        title="",
+        strapline="",
+        recipient="",
     )
 
 
@@ -107,4 +120,8 @@ async def content(
             )
             for t in config.trophies
         ],
+        operator=config.operator,
+        title=config.title,
+        strapline=config.strapline,
+        recipient=config.recipient,
     )

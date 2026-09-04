@@ -332,13 +332,22 @@ export function Console() {
       case "activation":
         return <Activation onDone={refresh} />;
       case "profile":
-        return <ProfileSelect onDone={refresh} operatorOnline={operatorOnline} />;
+        return (
+          <ProfileSelect
+            onDone={refresh}
+            operatorOnline={operatorOnline}
+            recipient={content?.recipient}
+            operator={content?.operator}
+          />
+        );
       case "difficulty":
         return <DifficultySelect onDone={refresh} />;
       case "install":
-        return <Install onDone={refresh} />;
+        return <Install onDone={refresh} strapline={content?.strapline ?? ""} />;
       case "howto":
-        return <HowToPlay onDone={refresh} />;
+        return (
+          <HowToPlay onDone={refresh} copy={content?.copy.how_to_play ?? ""} trophies={content?.trophies ?? []} />
+        );
       case "game":
         // `key={gameAttempt}` forces a fresh mount on every attempt — see
         // `gameAttempt`'s own comment above for why a same-phase retry
@@ -432,6 +441,7 @@ export function Console() {
         return (
           <Checkpoint
             onDesync={() => void refresh()}
+            operator={content?.operator}
             onPassed={(released) => {
               // The checkpoint itself always advances the run regardless
               // of whether a code came back yet (run_service.py's

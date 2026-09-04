@@ -241,7 +241,7 @@ Sound remains **non-load-bearing**: on mute, every trophy, state change and erro
 
 Generated once at authoring time and committed as static audio. **Never runtime TTS** — that means an API dependency at midnight, latency before every pop, and a failure mode on the one night that cannot have one.
 
-Roughly six to eight lines. It never names a trophy — real PlayStation doesn't either, and a generic line means the audio never has to be regenerated when trophy names change:
+Roughly six to eight lines. It never names a trophy — a generic line means the audio never has to be regenerated when trophy names change:
 
 - boot: one line
 - install: two or three, matching the on-screen subtitles

@@ -116,6 +116,28 @@ async def test_anonymous_response_has_no_trophy_names_and_no_closing_message(cli
     assert "questions" not in body
 
 
+async def test_anonymous_response_has_no_identity_fields(client):
+    # operator/title/strapline/recipient are only ever the payoff of a run
+    # that's live -- an anonymous, not-yet-live caller must not learn the
+    # operator's or recipient's name, the run's title, or its strapline any
+    # more than it learns a trophy name or the closing message.
+    body = (await client.get("/api/content")).json()
+    assert body["operator"] == ""
+    assert body["title"] == ""
+    assert body["strapline"] == ""
+    assert body["recipient"] == ""
+
+
+async def test_prelive_player_response_has_no_identity_fields(prelive_player_client):
+    # Same restricted tier as the anonymous caller (teaser aside) -- an
+    # authenticated player before go-live is still pre-payoff.
+    body = (await prelive_player_client.get("/api/content")).json()
+    assert body["operator"] == ""
+    assert body["title"] == ""
+    assert body["strapline"] == ""
+    assert body["recipient"] == ""
+
+
 async def test_anonymous_response_is_restricted_even_once_the_run_is_live(sessionmaker):
     # The restriction is about WHO is asking (no session), not WHEN --
     # an anonymous caller must not get the full payload just because
@@ -150,6 +172,19 @@ async def test_operator_gets_the_full_payload_even_before_go_live(prelive_operat
     assert body["trophies"] != []
     assert body["copy"]["closing"] != ""
     assert body["copy"]["how_to_play"] != ""
+
+
+async def test_full_payload_carries_the_identity_fields(prelive_operator_client):
+    # The four identity fields are only ever served as part of the full,
+    # earned payload -- this pins that they actually make it into that
+    # payload (not just that the restricted tiers withhold them).
+    body = (await prelive_operator_client.get("/api/content")).json()
+    assert body["operator"] != ""
+    assert body["title"] != ""
+    assert body["recipient"] != ""
+    # strapline may legitimately be "" for a config that doesn't set one --
+    # the example config does, so this pins that it round-trips too.
+    assert body["strapline"] != ""
 
 
 async def test_hidden_trophy_names_are_masked_server_side(live_player_client):

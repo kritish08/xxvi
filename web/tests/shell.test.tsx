@@ -138,9 +138,9 @@ describe("DifficultySelect", () => {
 });
 
 describe("Install", () => {
-  it("opens on the library card, carrying the title and strapline", () => {
-    render(<Install onDone={vi.fn()} />);
-    expect(screen.getByText(/playing this one since 2006/)).toBeDefined();
+  it("opens on the library card, carrying the configured strapline", () => {
+    render(<Install onDone={vi.fn()} strapline="years in the making." />);
+    expect(screen.getByText(/years in the making/)).toBeDefined();
     expect(screen.getByRole("button", { name: "install" })).toBeDefined();
   });
 });

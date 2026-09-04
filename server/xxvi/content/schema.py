@@ -94,6 +94,21 @@ class CopyBlock(BaseModel):
 
 class RunConfig(BaseModel):
     recipient: str
+    # Identity, pulled out of components that used to hardcode a real
+    # person's name so this repository can be pointed at anyone. All three
+    # default so `config/run.yaml` -- gitignored, real, and never edited by
+    # this change -- keeps validating exactly as it did before these fields
+    # existed.
+    #
+    # `operator` and `title` are bounded (non-empty, capped) the same way
+    # `Reward.label` is: whatever renders them does so at a large display
+    # size with no truncation, so an unbounded or empty value is a
+    # content-authoring bug better caught at load time than on screen.
+    # `strapline` is the one identity field allowed to be empty -- the
+    # client renders nothing rather than an empty element for it.
+    operator: str = Field(default="the operator", min_length=1, max_length=32)
+    title: str = Field(default="XXVI", min_length=1, max_length=16)
+    strapline: str = Field(default="", max_length=64)
     acts: int = Field(ge=1)
     segments_per_act: int = Field(ge=1)
     questions: list[Question]

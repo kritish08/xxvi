@@ -1,5 +1,15 @@
 # yaml-language-server: $schema=./run.schema.json
-recipient: "PLACEHOLDER"
+# The player's name. It is shown on the profile tile and in the copy, so
+# the demo uses a generic second person rather than the literal string
+# "PLACEHOLDER", which is what this used to say -- once `recipient`
+# started driving the UI, the demo greeted everyone as PLACEHOLDER.
+# `check-config` still refuses this file for a real run: the reward
+# codes are the dummy sentinels and `is_serving_example_content()` is
+# the stronger "you never wrote your own config" signal anyway.
+recipient: "you"
+operator: "the operator"
+title: "XXVI"
+strapline: "you've been playing this one for years."
 acts: 2
 segments_per_act: 4
 devil_lives: 3

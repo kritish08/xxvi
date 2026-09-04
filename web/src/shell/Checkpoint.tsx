@@ -60,9 +60,14 @@ type Props = {
    *  phase the server actually has it in, instead of retrying a request
    *  that will 409 forever. */
   onDesync: () => void;
+  /** The operator's name (`ContentView.operator`, server/xxvi/content/
+   *  schema.py::RunConfig.operator). Defaults to the schema's own
+   *  "the operator" so this reads sensibly even if `content` hasn't
+   *  loaded yet by the time this screen mounts. */
+  operator?: string;
 };
 
-export function Checkpoint({ onPassed, onDesync }: Props) {
+export function Checkpoint({ onPassed, onDesync, operator = "the operator" }: Props) {
   const [code, setCode] = useState("");
   const [status, setStatus] = useState<CheckpointResponse | null>(null);
   const [busy, setBusy] = useState(false);
@@ -102,7 +107,7 @@ export function Checkpoint({ onPassed, onDesync }: Props) {
           unexplained password prompt appearing out of nowhere. */}
       <h2 className="checkpoint__title">act cleared</h2>
       <p className="checkpoint__line">
-        a gift card is waiting behind this. kritish has the code — ask him for it.
+        a gift card is waiting behind this. {operator} has the code — ask for it.
       </p>
 
       <form className="checkpoint__form" onSubmit={(event) => void submit(event)}>
@@ -132,7 +137,7 @@ export function Checkpoint({ onPassed, onDesync }: Props) {
           words, not "locked" and nothing else. */}
       {isLocked && (
         <p className="checkpoint__alert" role="alert">
-          locked. tell kritish — he can clear it from his end right now.
+          locked. tell {operator} — they can clear it from their end right now.
         </p>
       )}
     </section>

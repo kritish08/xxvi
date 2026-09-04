@@ -9,6 +9,11 @@ vi.mock("../src/lib/run-client", () => ({ runApi: { submitCheckpoint: vi.fn() } 
 describe("Checkpoint", () => {
   beforeEach(() => vi.mocked(api.submitCheckpoint).mockReset());
 
+  it("names the configured operator, not a hardcoded person, in the act-cleared line", () => {
+    render(<Checkpoint onPassed={vi.fn()} onDesync={vi.fn()} operator="Jordan" />);
+    expect(screen.getByText(/Jordan has the code/i)).toBeDefined();
+  });
+
   it("shows attempts remaining after a wrong code", async () => {
     vi.mocked(api.submitCheckpoint).mockResolvedValue({
       outcome: "wrong", attempts_remaining: 2, released: null, run: {} as never,
@@ -19,14 +24,26 @@ describe("Checkpoint", () => {
     expect(await screen.findByText(/2/)).toBeDefined();
   });
 
-  it("tells him to call Kritish once locked, rather than dead-ending", async () => {
+  it("tells him to call the operator once locked, rather than dead-ending", async () => {
+    vi.mocked(api.submitCheckpoint).mockResolvedValue({
+      outcome: "locked", attempts_remaining: 0, released: null, run: {} as never,
+    });
+    render(<Checkpoint onPassed={vi.fn()} onDesync={vi.fn()} operator="Jordan" />);
+    await userEvent.type(screen.getByLabelText("code"), "NOPE");
+    await userEvent.click(screen.getByRole("button", { name: /submit/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/jordan/i);
+  });
+
+  it("falls back to a generic operator label when no operator prop is given", async () => {
+    // Content may not have loaded yet by the time this screen mounts --
+    // this must never render "undefined" or blow up.
     vi.mocked(api.submitCheckpoint).mockResolvedValue({
       outcome: "locked", attempts_remaining: 0, released: null, run: {} as never,
     });
     render(<Checkpoint onPassed={vi.fn()} onDesync={vi.fn()} />);
     await userEvent.type(screen.getByLabelText("code"), "NOPE");
     await userEvent.click(screen.getByRole("button", { name: /submit/i }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/kritish/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/the operator/i);
   });
 
   // The server's own gate logic (xxvi/gates/service.py) returns
@@ -41,10 +58,10 @@ describe("Checkpoint", () => {
     vi.mocked(api.submitCheckpoint).mockResolvedValue({
       outcome: "wrong", attempts_remaining: 0, released: null, run: {} as never,
     });
-    render(<Checkpoint onPassed={vi.fn()} onDesync={vi.fn()} />);
+    render(<Checkpoint onPassed={vi.fn()} onDesync={vi.fn()} operator="Jordan" />);
     await userEvent.type(screen.getByLabelText("code"), "NOPE");
     await userEvent.click(screen.getByRole("button", { name: /submit/i }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/kritish/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/jordan/i);
   });
 
   // Caught against a real running server, not just guessed: once locked,

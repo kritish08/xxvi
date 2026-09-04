@@ -35,12 +35,17 @@ const SUBTITLES = [
 function LibraryCard({
   onInstall,
   standardTotal,
+  strapline,
 }: {
   onInstall: () => void;
   /** null covers both "still loading" and "the fetch failed" — either way
    *  the card degrades to just "0%", never a wrong number, never a blank
    *  screen (see lib/trophy-content.ts). */
   standardTotal: number | null;
+  /** `ContentView.strapline`. Empty is a legitimate config choice (the
+   *  field itself defaults to "") — render nothing rather than an empty
+   *  paragraph in that case. */
+  strapline: string;
 }) {
   return (
     <section className="library">
@@ -52,7 +57,7 @@ function LibraryCard({
       <p className="library__progress label">
         {standardTotal !== null ? <>0% &nbsp;·&nbsp; 0 of {standardTotal} trophies</> : "0%"}
       </p>
-      <p className="library__strapline">you&rsquo;ve been playing this one since 2006.</p>
+      {strapline && <p className="library__strapline">{strapline}</p>}
       <button className="library__install" onClick={onInstall} autoFocus>
         install
       </button>
@@ -124,7 +129,15 @@ function InstallBar({ onDone }: { onDone: () => void }) {
   );
 }
 
-export function Install({ onDone }: { onDone: () => void }) {
+export function Install({
+  onDone,
+  strapline = "",
+}: {
+  onDone: () => void;
+  /** `ContentView.strapline`. Defaults to "" (nothing rendered) rather
+   *  than a hardcoded line, matching the schema field's own default. */
+  strapline?: string;
+}) {
   const [installing, setInstalling] = useState(false);
   const [standardTotal, setStandardTotal] = useState<number | null>(null);
 
@@ -138,6 +151,10 @@ export function Install({ onDone }: { onDone: () => void }) {
     };
   }, []);
 
-  if (!installing) return <LibraryCard onInstall={() => setInstalling(true)} standardTotal={standardTotal} />;
+  if (!installing) {
+    return (
+      <LibraryCard onInstall={() => setInstalling(true)} standardTotal={standardTotal} strapline={strapline} />
+    );
+  }
   return <InstallBar onDone={onDone} />;
 }

@@ -223,7 +223,10 @@ def test_get_config_loads_example_with_cache_clear(tmp_path, monkeypatch):
     )
     try:
         config = get_config()
-        assert config.recipient == "PLACEHOLDER"
+        # The demo greets the player in the generic second person. It used
+        # to be the literal "PLACEHOLDER", which became visible the moment
+        # `recipient` started driving the profile tile.
+        assert config.recipient == "you"
         assert config.total_segments == 8
 
         # Cache should be populated
@@ -292,7 +295,12 @@ def test_is_serving_example_content_is_false_for_a_real_config(tmp_path, monkeyp
     from xxvi.settings import Settings, get_settings
 
     real = tmp_path / "run.yaml"
-    real.write_text(EXAMPLE.read_text().replace("PLACEHOLDER", "Real Recipient"))
+    # Substitute the recipient FIELD, not a magic word in the file -- this
+    # previously replaced the literal "PLACEHOLDER" and silently became a
+    # no-op when the demo stopped using that string.
+    real.write_text(
+        EXAMPLE.read_text().replace('recipient: "you"', 'recipient: "Real Recipient"')
+    )
 
     get_config.cache_clear()
     resolved_config_path.cache_clear()
@@ -317,3 +325,56 @@ def test_an_overlong_reward_label_is_rejected_at_load_not_at_midnight():
 
     with pytest.raises(ValidationError, match="label"):
         make_config(rewards=[{"id": 1, "after_act": 1, "label": "x" * 200}])
+
+
+def test_identity_fields_default_so_an_existing_config_keeps_validating_unchanged():
+    # config/run.yaml predates operator/title/strapline and must never be
+    # touched by this change (it's gitignored, real, and private) -- so a
+    # config that omits all three has to keep loading exactly as it did
+    # before, with sensible generic defaults standing in.
+    from tests.factories import make_config
+
+    config = make_config()
+    assert config.operator == "the operator"
+    assert config.title == "XXVI"
+    assert config.strapline == ""
+
+
+def test_operator_is_bounded_for_display():
+    # Same rationale as Reward.label (see that field's comment): a long
+    # operator name would overflow whatever chrome renders it.
+    from tests.factories import make_config
+
+    with pytest.raises(ValidationError, match="operator"):
+        make_config(operator="x" * 33)
+    with pytest.raises(ValidationError, match="operator"):
+        make_config(operator="")
+
+
+def test_title_is_bounded_for_large_display_sizes():
+    from tests.factories import make_config
+
+    with pytest.raises(ValidationError, match="title"):
+        make_config(title="x" * 17)
+    with pytest.raises(ValidationError, match="title"):
+        make_config(title="")
+
+
+def test_strapline_is_bounded_and_optional():
+    from tests.factories import make_config
+
+    with pytest.raises(ValidationError, match="strapline"):
+        make_config(strapline="x" * 65)
+    # Empty is fine -- strapline is the one identity field allowed to be
+    # unset entirely, since "render nothing rather than an empty element"
+    # is a valid outcome for it client-side.
+    assert make_config(strapline="").strapline == ""
+
+
+def test_a_real_config_can_set_all_three_identity_fields():
+    from tests.factories import make_config
+
+    config = make_config(operator="Jordan", title="XXVI", strapline="years in the making.")
+    assert config.operator == "Jordan"
+    assert config.title == "XXVI"
+    assert config.strapline == "years in the making."

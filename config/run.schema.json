@@ -180,6 +180,26 @@
       "title": "Recipient",
       "type": "string"
     },
+    "operator": {
+      "default": "the operator",
+      "maxLength": 32,
+      "minLength": 1,
+      "title": "Operator",
+      "type": "string"
+    },
+    "title": {
+      "default": "XXVI",
+      "maxLength": 16,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "strapline": {
+      "default": "",
+      "maxLength": 64,
+      "title": "Strapline",
+      "type": "string"
+    },
     "acts": {
       "minimum": 1,
       "title": "Acts",

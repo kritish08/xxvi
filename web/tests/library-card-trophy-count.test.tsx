@@ -63,10 +63,10 @@ describe("Install's library card trophy count", () => {
 
   it("degrades to showing no count — never a wrong one, never a blank screen — when the fetch fails", async () => {
     getContent.mockRejectedValue(new Error("network error"));
-    render(<Install onDone={vi.fn()} />);
+    render(<Install onDone={vi.fn()} strapline="you've been playing this one for years." />);
 
     // The rest of the library card must still be there: not a blank screen.
-    expect(screen.getByText(/playing this one since 2006/)).toBeInTheDocument();
+    expect(screen.getByText(/playing this one for years/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "install" })).toBeInTheDocument();
 
     await waitFor(() => expect(getContent).toHaveBeenCalled());
@@ -74,5 +74,21 @@ describe("Install's library card trophy count", () => {
     // inventing or freezing a number.
     expect(screen.queryByText(/trophies/)).toBeNull();
     expect(screen.getByText("0%")).toBeInTheDocument();
+  });
+});
+
+describe("Install's strapline", () => {
+  it("renders the configured strapline, not a hardcoded one", async () => {
+    getContent.mockResolvedValue(trophySet(1, 0));
+    render(<Install onDone={vi.fn()} strapline="a gift twenty years in the making." />);
+    expect(await screen.findByText(/twenty years in the making/)).toBeInTheDocument();
+    expect(screen.queryByText(/since 2006/)).toBeNull();
+  });
+
+  it("renders nothing rather than an empty element when strapline is unset", async () => {
+    getContent.mockResolvedValue(trophySet(1, 0));
+    const { container } = render(<Install onDone={vi.fn()} />);
+    await waitFor(() => expect(getContent).toHaveBeenCalled());
+    expect(container.querySelector(".library__strapline")).toBeNull();
   });
 });

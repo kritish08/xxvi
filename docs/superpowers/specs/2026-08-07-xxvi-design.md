@@ -8,7 +8,7 @@
 
 ## 1. What this is
 
-A **desktop web experience**, disguised as a PlayStation console, built for one specific person: my best friend of twenty years, turning 26.
+A **desktop web experience**, disguised as a game console, built for one specific person: my best friend of twenty years, turning 26.
 
 He boots what looks like a PS console. His library holds exactly one game he's never seen — **`XXVI`**, sitting at 0%. To reach the Platinum he must clear eight segments, each one a minigame followed by a question only he could answer. Clearing an act releases a real PlayStation Network gift card code.
 
@@ -28,7 +28,7 @@ Box art leans on the split without annotating it: `X X V I` above a rule, `XX ·
 
 Laptop, landscape, keyboard. Not phones.
 
-This is the correct call and it improves the product: the PlayStation interface was designed for a television, so it reads as *right* on a large landscape screen and as a mobile port on a phone. It also changes three things concretely.
+This is the correct call and it improves the product: a console interface is designed for a television, so it reads as *right* on a large landscape screen and as a mobile port on a phone. It also changes three things concretely.
 
 **Controls are keyboard-first.** The four PS face buttons map to four keys, shown on screen throughout. **Optional: if a controller is connected, the Gamepad API picks it up and he plays △○✕□ on actual △○✕□.** That is a genuine payoff for a PS player and a real technical flourish — but it is strictly an enhancement. Keyboard is the supported path; the gamepad path must never be required, because a controller that fails to enumerate at 12:01 AM cannot be allowed to block anything.
 
@@ -83,7 +83,7 @@ Logging him in early is deliberate: it tells him something exists and is coming 
 
 Twenty years in, he has never platinumed the one game he's been playing his whole life. Today he has to earn it.
 
-Per real PlayStation rules the Platinum only unlocks once every other trophy is done — so the structure of the joke and the structure of the gift are the same object.
+By the usual console-trophy rules the Platinum only unlocks once every other trophy is done — so the structure of the joke and the structure of the gift are the same object.
 
 ### 2.2 Flow
 

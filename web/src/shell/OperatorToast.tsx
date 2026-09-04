@@ -7,7 +7,7 @@
 // (shell/TrophyToast.tsx, trophy.css) -- same card shape, same padding and
 // border treatment, same 320ms-in / hold / 320ms-out choreography via the
 // `.toast` base class and `.toast--retracting` timer pattern -- so this
-// reads as the same *family* of PlayStation-style notification the run
+// reads as the same *family* of console-style notification the run
 // already trained the eye on, not a second visual language bolted on.
 //
 // But it must never be mistaken for a trophy pop -- a trophy is an

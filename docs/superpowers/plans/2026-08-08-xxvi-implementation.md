@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A desktop web experience disguised as a PlayStation console, where clearing eight game-plus-question segments releases two real PSN gift card codes.
+**Goal:** A desktop web experience disguised as a game console, where clearing eight game-plus-question segments releases two real PSN gift card codes.
 
 **Architecture:** Modular-monolith FastAPI backend where a pure, exhaustively-tested state machine (`core/`) owns all progression truth, an isolated `vault/` owns code custody, and the React client is a renderer with no authority. Progress advances only through server-issued, single-use segment tokens. A WebSocket hub streams run state to an operator dashboard that must approve every code release.
 
