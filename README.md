@@ -1,207 +1,322 @@
 # XXVI
 
-XXVI is a desktop web experience disguised as a game console, built
-as a birthday gift for one person: he boots what looks like a console UI,
-finds a library holding one game he's never seen, sitting at 0%, and clears
-it to reach a Platinum trophy. It ran once, live, at midnight, for a real
-person, and the gift it unlocked was real. This repository is that system,
-generalised so someone else can point it at their own person, their own
-questions, and their own gift.
+A one-shot, operator-gated state machine that releases irreversible payloads
+to an untrusted client.
 
-Clearing the game means clearing 8 segments, each a minigame followed by a
-question only the intended recipient could answer. Clearing an "act" (a
-group of segments) makes the operator — the gift-giver, watching from a
-second screen — release a real gift-card code. Two difficulty modes:
-KIDDIE (a fail costs only the current segment) and DEVIL (three lives for
-the whole run). Five minigame mechanics: `simon`, `stack`, `drift`,
-`trophy_run`, `update`.
-
-## Quickstart: play the demo
-
-Four commands, no hashing, no editing. Verified end to end on a clean
-machine — including the ordering, which matters.
-
-```bash
-git clone <this-repo-url> && cd birthday-fun
-cp .env.demo .env
-
-docker compose up -d db                              # database first
-docker compose run --rm api alembic upgrade head     # then the schema
-docker compose up -d --build                         # then everything else
-```
-
-**Run the migration before starting the api.** The api queries `accounts` at
-startup, so against an empty database it crash-loops with `relation
-"accounts" does not exist` — a confusing first impression that looks like a
-broken image rather than a missing step. Bringing `db` up alone, migrating,
-then starting the rest avoids it entirely.
-
-Then open **http://localhost** and sign in:
-
-| | |
-|---|---|
-| player | `player` / `demo` |
-| operator | `operator` / `demo` |
-| product key | `DEMO-1234-5678` |
-| checkpoint code | `DEMO` (both acts) |
-
-The player signs in, powers on the console, enters the product key, picks a
-profile and a difficulty, and plays. The operator dashboard is the
-gift-giver's side: it watches the run live and releases a code when an act is
-cleared. Log in as the operator in a second browser to see both halves at
-once.
-
-`.env.demo` is a complete, deliberately public, deliberately weak
-configuration. It is safe to ship because it cannot be used for a real run by
-accident — `python -m xxvi.cli check-config` refuses to pass with its values
-in place, so the preflight that gates a real release fails loudly rather than
-letting a real gift ride on demo credentials.
-
-It serves **plain HTTP on localhost on purpose.** Point `SITE_DOMAIN` at
-`localhost` over HTTPS and Caddy mints a certificate from its own internal
-CA, so the demo opens behind a full-page browser security warning. For a real
-deployment set a real domain and Caddy provisions a genuine certificate
-automatically.
-
-No game content needs editing to try this. `config/run.yaml` (the real,
-personal content) is gitignored and never shipped; with it absent the server
-serves `config/run.example.yaml` — a complete, finishable two-act demo — and
-says so in its logs.
-
-## Make it yours
-
-1. Copy `config/run.example.yaml` to `config/run.yaml` and edit it. It's
-   gitignored on purpose — this is where the real, personal content goes,
-   and it never gets committed. `config/run.schema.json` is generated from
-   the same Pydantic models the server validates against
-   (`server/xxvi/content/schema.py`), so pointing an editor at it (VS Code
-   picks it up automatically via the schema association) gets you
-   autocomplete and inline errors while you write. From the terminal:
-
-   ```bash
-   cd server && .venv/bin/python -m xxvi.cli validate-config ../config/run.yaml
-   ```
-
-2. Any number of acts is supported — checkpoint gates and reward releases
-   both used to be hardcoded to exactly two; a third act used to load
-   without error and then either release the wrong reward or 500 at the
-   checkpoint. Gate ids are now computed (`checkpoint_gate(act)`), and
-   secrets follow an `{n}` convention: `REWARD_{n}_CODE` for the gift-card
-   codes, `CHECKPOINT_{n}_HASH` for the checkpoint answer hashes (act 1
-   and 2 keep their original env var names for backward compatibility; act
-   3 onward reads `REWARD_3_CODE` / `CHECKPOINT_3_HASH` directly). See the
-   comments in `.env.example` for the exact shape, including a documented
-   trap: the activation code hash must be generated from the *dashed*
-   `XXXX-XXXX-XXXX` form the client actually sends, not the bare answer.
-
-3. Set real values in `.env` — `REWARD_{n}_CODE`, `CHECKPOINT_{n}_HASH`,
-   credentials — and confirm you're actually ready before an event:
-
-   ```bash
-   cd server && .venv/bin/python -m xxvi.cli check-config
-   ```
-
-   This must print `config OK`. If it reports placeholder content or a
-   missing reward/checkpoint value, fix that before going live — there is
-   no recovery path for realizing this at midnight.
+It ran on a single evening, live, with no opportunity to patch and no second
+attempt — the domain was a birthday gift, where clearing a group of segments
+released a real gift-card code. Releasing a code twice cost real money;
+releasing zero codes while reporting success to the player was worse, and
+harder to notice. The minigames deciding whether a release happened at all
+ran in a browser I did not control, while two authenticated parties — the
+player progressing through the run, and an operator intervening from a second
+screen — wrote to the same database row concurrently.
 
 ## Architecture, and why
 
-- **Server-authoritative game verification** (`server/xxvi/games/verify.py`).
-  The client reports `passed_client_side` after a minigame, but that field
-  is advisory and structurally ignored — the server independently
-  re-derives the verdict from the segment's seed, the claimed input count,
-  and a wall-clock check against the segment token's own signed issue
-  time, so a claimed `duration_ms` can never exceed how much real time has
-  actually passed since the token was handed out. `drift` (continuous
-  steering, not discrete answers) is deliberately exempt from the
-  per-input rate floor that the other mechanics use — applying it there
-  penalized playing *well*, not playing dishonestly.
+### Releasing a payload at most once
 
-- **Optimistic concurrency** on `Run.version` — every mutation is a
-  compare-and-swap against the version the caller last read, not a lock.
-  Deletes are ordered explicitly by foreign key rather than relying on
-  `ON DELETE CASCADE`, since this schema doesn't use it.
+The obvious approach is to check whether a code has already been released,
+then insert a record and emit it. That is a race: two requests can both read
+"not released" before either writes.
 
-- **Insert-first-catch-unique-violation** as the at-most-once idiom for
-  `code_releases`, `consumed_tokens`, and `trophies_earned`
-  (`server/xxvi/vault/service.py`). Rather than checking-then-inserting
-  (a race), the code inserts and treats a unique-constraint violation on
-  `(run_id, reward_id)` as "already done." `_is_unique_violation`'s
-  docstring is worth reading directly — it explains why a bare
-  `except IntegrityError` here would be catastrophic (it would silently
-  swallow a *foreign-key* violation too, e.g. an invalid run id, as a
-  quiet false "already released," and emit no code at all with no error).
+I inserted first and let the database reject the duplicate. The claim is
+written to `code_releases` before anything is emitted, and
+`UNIQUE(run_id, reward_id)` is the concurrency primitive — not application
+logic, not a lock.
 
-- **Vault invariants**, held nowhere else: a code is emitted only with
-  explicit operator approval; at most once per `(run, reward)`, enforced
-  by a database `UNIQUE` constraint rather than application logic; the
-  code value is never logged, never persisted outside the moment of
-  release, and never appears in an exception; and a dry run leaves no
-  ledger trace at all.
+```python
+async with self._sessionmaker() as session:
+    session.add(CodeRelease(run_id=run_id, reward_id=reward_id))
+    try:
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        if not _is_unique_violation(exc):
+            raise
+        raise AlreadyReleased(f"reward {reward_id} already released") from None
+```
 
-- **A three-bus WebAudio mix** — MUSIC, SFX, VOICE — with crossfaded music
-  loops, a `DynamicsCompressorNode` acting as a safety limiter rather than
-  a shaping tool, and bus-level ducking (VOICE ducks MUSIC/SFX; a trophy
-  sting ducks MUSIC) (`web/src/lib/audio.ts`).
+The `if not _is_unique_violation(exc): raise` is what makes this safe rather
+than merely compact, and the reasoning is carried in that function's
+docstring. It is reproduced here in full rather than summarised:
 
-- **Pydantic → OpenAPI → generated TypeScript client.** `npm run codegen`
-  emits the server's OpenAPI schema without a running server and feeds it
-  through `openapi-typescript`, so the frontend's request/response types
-  come from the same Pydantic models the API actually validates against.
+```
+Distinguish "duplicate (run_id, reward_id)" from any other IntegrityError.
 
-## What was cut, and what's still imperfect
+`CodeRelease.run_id` is itself a foreign key to `runs.id`, so an invalid
+run id raises an `IntegrityError` too -- as would any other constraint
+violation the schema grows later. A bare `except IntegrityError` would
+misread all of those as "already released" and swallow them as a quiet
+success-shaped no-op, which is catastrophic here (no code gets emitted
+and nobody is told why). Only the specific unique-constraint violation
+on `(run_id, reward_id)` may be treated as a duplicate; everything else
+must propagate as a real error.
 
-- **A web-based config editor was cut on purpose.** The audience is
-  expected to edit `config/run.yaml` in a PR; a CRUD UI for it would be
-  the largest subsystem in this repo and would carry its own auth surface
-  for very little gained.
-- **New game mechanics, or a plugin interface for adding one, are out of
-  scope.** The five mechanics shipped are the five the original run used.
-- **`force-golive` is in-memory only**, not persisted to the database — a
-  restart after forcing go-live resets it, and the operator has to notice
-  `GET /api/session` reporting `live: false` again and re-force it. This
-  is a known, accepted limitation, documented loudly in `docs/runbook.md`
-  rather than fixed, since adding a migration for a once-only live event
-  felt like the wrong tradeoff this close to shipping.
-- **One of three Simon Says defects reported from play could not be
-  reproduced from reading the code**, and per this project's own rule for
-  claims like that, it was left unfixed rather than "fixed" without a
-  repro: a success flash that reportedly doesn't clear, in the ~900ms hold
-  window after a wrong press. The other two defects in that same window
-  (extra presses during the hold window burning extra tries; the header
-  still inviting input the game is about to discard) were confirmed by
-  reading the code and fixed. If you can reproduce the third one, a
-  failing test is the way in.
-- **Narration is generated but disabled** (see
-  `web/public/audio/PROVENANCE.md`) — two full TTS generation passes were
-  produced and both were judged wrong for the console this is trying to
-  be, not just for voice quality. Every narrated line has an on-screen
-  text equivalent, so nothing is functionally lost with it off.
-- Screenshots below were taken against `config/run.example.yaml`, the
-  shipped demo config — never against real content. No screenshot in this
-  repo or in the linked write-up shows a real question or a real answer.
+Two checks, for two different reasons -- read this before "simplifying"
+either one away:
 
-## Screenshots
+- `type(orig).__name__ == "UniqueViolationError"`: this is here for
+  asyncpg, which raises a `UniqueViolationError` distinct from
+  `ForeignKeyViolationError` in its own exception hierarchy. In
+  practice this branch does NOT fire against this project's stack:
+  SQLAlchemy's asyncpg dialect re-wraps the driver-level error before
+  it reaches `exc.orig`, so as currently observed this is dead code in
+  production. It is kept in case that wrapping behaviour ever changes
+  upstream, but nothing here currently depends on it firing.
+- The message-substring match (`"unique constraint" in message`) is
+  NOT a fallback -- it is what actually distinguishes the two cases on
+  both backends this project uses today (Postgres via asyncpg in
+  production, SQLite via aiosqlite in tests), because both wrap the
+  real error down to a message-only `IntegrityError` by the time it's
+  inspectable here. Deleting it as "redundant" with the branch above
+  would silently turn every IntegrityError back into a false
+  "already released" -- i.e. it would reintroduce the exact bug this
+  function exists to fix.
 
-*Pending — none are included in this initial release. When added, they
-will be taken against the demo config only (see above), not real content.*
+Residual risk NOT closed by this function: a primary-key unique
+violation -- e.g. from an `id` sequence desync after a database
+dump/restore -- would also contain "unique constraint" in its message
+and would be misread as AlreadyReleased, the same way a bare
+`except IntegrityError` would misread an FK violation. This is a much
+narrower window (a specific kind of database corruption vs. any
+IntegrityError) but it is not eliminated here.
+```
 
-## Write-up
+— `server/xxvi/vault/service.py::_is_unique_violation`
 
-A longer write-up of how this was built lives at
-[geekonpeak.com](https://geekonpeak.com).
+The same idiom, against the same kind of constraint, carries
+`consumed_tokens` (`UNIQUE(run_id, nonce)`, single-use segment tokens) and
+`trophies_earned` (`UNIQUE(run_id, trophy_id)`). All four unique constraints
+are in the Alembic migrations, not only the models, so they hold in the
+deployed database regardless of what the application does.
+
+**What it cost.** Anything shown to a client reads the `code_releases`
+ledger, never the field named `released_rewards` on the run row. That field
+is the state machine's own record of which checkpoints have been cleared, set
+the instant a checkpoint passes — before the operator has approved anything.
+The two disagree legitimately, and every future reader has to know which one
+is authoritative. I accepted a permanent second source of truth over a UI
+that says "released" about a code that does not exist
+(`server/xxvi/api/run_service.py::released_reward_ids`).
+
+### Mutating a run under two concurrent writers
+
+The obvious approach is to load the run, mutate it, and save. Two concurrent
+events then compute two whole new states from the same read, and whichever
+writes second overwrites fields the first had already changed.
+
+I made every mutation a compare-and-swap against the version the caller read,
+setting all mutable columns in one statement:
+
+```python
+update(Run)
+  .where(Run.id == run_id, Run.version == expected_version)
+  .values(phase=..., segment=..., cleared_segments=..., lives=...,
+          version=expected_version + 1)
+# rowcount == 1 if this write landed, 0 if it lost the race and must retry
+```
+
+— `server/xxvi/persistence/repositories.py::save_state`
+
+Two different failures are prevented, and the tests name them separately. A
+torn row is two events each writing a full state computed from the same read
+(`test_concurrent_divergent_events_never_produce_a_torn_row`). A lost update
+is milder: two concurrent failures in the three-lives mode both read
+`lives=3` and both write `lives=2`, where the correct outcome is 3 → 2 → 1
+across the two events with the loser retrying
+(`test_two_concurrent_devil_failures_cost_two_lives_not_one`).
+
+**What it cost.** The guarantee depends on a discipline the type system does
+not enforce: `expected_version` must be the version the caller read the state
+from. Passing a re-read, or a value from a different request, compiles, runs,
+and silently defeats it. The docstring says so; nothing else stops it.
+Deletes are also ordered explicitly by foreign key, because this schema does
+not use `ON DELETE CASCADE`.
+
+### Deciding whether a minigame was actually won
+
+The obvious approach is to trust the client's own verdict, since it ran the
+game. The client sends one — `passed_client_side` — and the server never
+reads it as authority. The verdict is re-derived from the segment's seed, the
+claimed input count, and a wall-clock cross-check against the segment token's
+signed issue time (`server/xxvi/games/verify.py::verify_result`).
+
+Two decisions inside that file went against the obvious direction.
+
+**I removed a check because it punished skill.** A per-input rate floor
+(`MIN_MS_PER_INPUT`, 60ms) applies to mechanics where each input is a
+discrete answer. It originally applied to `drift` as well — continuous
+steering, where the correct way to play is a rapid stream of taps, easily
+several hundred over a twenty-second segment. The effect was that the better
+someone played, the more likely the server rejected them: fill the meter
+early, submit, be told you failed. Three such rejections also awarded a
+hidden trophy, so the run congratulated the player for a bug. `drift` is now
+exempt through a named constant, `RATE_FLOOR_EXEMPT`, and keeps the checks
+that model it — time in zone, duration, and the wall-clock cap.
+
+**An earlier hardening turned out to be dead code, and the docstring works
+out why.** I had added a lower bound phrased in terms of the client-claimed
+`duration_ms`. Given `duration_ms >= input_count * MIN_MS_PER_INPUT` and
+`duration_ms <= elapsed_ms + slack`, that added condition is already implied
+and can never fire. I rephrased the bound against server-measured
+`elapsed_ms`, which an attacker cannot shorten, and dropped the
+client-claimed version for that path.
+
+**What it cost.** Real coverage, stated rather than implied. From the same
+docstring:
+
+> This narrows, but does not eliminate, the attack it targets:
+> `MAX_CLOCK_SLACK_MS` (2000ms) still exceeds the natural per-input floor for
+> most configured segments (e.g. a 4-length Simon sequence floors at 240ms),
+> so an instantly-solved low-floor segment submitted immediately still slips
+> under this bound.
+
+Tightening the slack starts rejecting honest players on slow connections. The
+gap is bounded, quantified, and left open.
+
+### Running the tests twice, against two databases
+
+The obvious approach is one suite against one database. The fast suite runs
+561 tests against SQLite in memory in about 35 seconds, which is what makes
+it usable while working.
+
+I split out a second suite that runs only against real Postgres, because the
+fast one cannot prove what it appeared to prove. From
+`server/tests/integration/README.md`:
+
+> SQLite's `StaticPool` fixture used everywhere in `tests/conftest.py`
+> secretly serializes every session in a test through one shared connection,
+> which makes any conclusion drawn from it about *concurrent* access unsound.
+> Three separate Criticals on this project were concurrency races that SQLite
+> structurally cannot detect, and one shared fixture was found to produce a
+> confidently wrong result on the money path: an 8-way race reported "1
+> success, 7 conflicts" — exactly the expected pass condition — while leaving
+> no row in the database at all.
+
+The Postgres tier covers real concurrent connections against real MVCC
+(`test_16_way_concurrent_release_emits_exactly_one_code_and_one_row`,
+`test_13_concurrent_wrong_guesses_lock_at_exactly_attempts_3_not_fewer`,
+`test_30_concurrent_wrong_attempts_at_activation_never_hard_locks`), runs the
+actual Alembic migrations including a downgrade-and-upgrade round trip — the
+fast suite builds its schema from `Base.metadata.create_all()` and never runs
+a migration — and pins the places SQLite's emulation diverges (`timestamptz`
+awareness on read, `UPDATE ... RETURNING` with zero matched rows).
+
+**What it cost.** Two suites to maintain, and the tier that proves the most
+is the one that does not run in CI. A default `pytest` reports
+`561 passed, 13 skipped`, and those 13 skipped are the tests guarding the
+release path. Anyone reading a green run without knowing that is reading less
+than they think.
+
+### Passing secrets to the container
+
+The obvious approach is `env_file: .env` in Compose. That broke every login
+with a 401.
+
+Compose interpolates `$` in env-file values, and an argon2 hash is literally
+`$argon2id$v=19$m=65536,...` — so `$argon2id`, `$v` and `$m` expanded to
+empty strings and the container received a mangled hash. Escaping them as
+`$$` fixes Compose and breaks the command-line tools, which read the same
+file directly through Pydantic. I mounted the file instead and let the
+application parse it, so one file has one literal meaning
+(`docker-compose.yml`, the `api` service).
+
+**What it cost.** The standard mechanism, and a container that now depends on
+a mounted host path rather than being configured by its environment.
+
+## Running it
+
+```bash
+git clone https://github.com/kritish08/xxvi.git && cd xxvi
+cp .env.demo .env
+
+docker compose up -d db                            # database first
+docker compose run --rm api alembic upgrade head   # then the schema
+docker compose up -d --build                       # then everything else
+```
+
+Then <http://localhost> — player `player` / `demo`, operator
+`operator` / `demo`, product key `DEMO-1234-5678`, checkpoint code `DEMO`.
+
+The ordering is not cosmetic. The API queries the `accounts` table during
+startup, so starting it against an unmigrated database produces a crash loop
+on `sqlalchemy.exc.ProgrammingError: relation "accounts" does not exist`,
+which reads like a broken image rather than a missing step.
+
+`.env.demo` is a complete, deliberately weak configuration, checked in on
+purpose. It cannot be used for a real run by accident:
+`python -m xxvi.cli check-config` refuses to pass with its values in place
+and names each offender. It serves plain HTTP — over HTTPS, Caddy issues a
+certificate from its own internal CA and the first screen is a browser
+security warning.
+
+Game content is one YAML file validated by Pydantic at load, with a JSON
+Schema generated from the same models (`config/run.schema.json`) so an editor
+offers completion and inline errors. `python -m xxvi.cli validate-config
+<path>` prints one line per problem instead of a traceback. A test
+(`test_the_committed_schema_is_in_sync_with_the_model`) asserts the committed
+schema equals what the models generate, so CI fails if the two have drifted.
+
+## What's imperfect
+
+- **The WebSocket hub is in-memory and single-process** by design
+  (`server/xxvi/realtime/hub.py`). Fan-out does not cross replicas, so this
+  is where the system fails first under horizontal scaling. It was built for
+  one player and one operator and was never asked to do more.
+- **The operator's force-go-live flag is in-memory too** and does not survive
+  a restart (`server/xxvi/main.py`). Adding a migration for a flag used once,
+  on one evening, was the wrong trade that close to the date. It is
+  documented in `docs/runbook.md` rather than fixed.
+- **The verification gap above is open.** An instantly-solved low-floor
+  segment submitted immediately still passes the wall-clock check. Closing it
+  means rejecting honest players on slow connections.
+- **`_is_unique_violation` has a residual risk.** A primary-key collision
+  from an id-sequence desync after a dump and restore would be misread as
+  `AlreadyReleased`, the same way a bare `except IntegrityError` misreads a
+  foreign-key violation. Narrower, not eliminated.
+- **One branch of `_is_unique_violation` is dead code in production** and is
+  documented as such. SQLAlchemy's asyncpg dialect re-wraps the driver error
+  before it reaches `exc.orig`, so the type-name check never fires. It is
+  kept against that wrapping changing upstream.
+- **The 13 Postgres tests do not run in CI.** They need `PG_TEST_URL`
+  pointing at a real database, so CI proves the fast suite only.
+- **A web configuration editor was cut.** It would have been the largest
+  subsystem here and carried its own authorisation surface, for content
+  edited a handful of times.
+- **There is no plugin interface for new minigame mechanics.** The five that
+  exist are the five that ran.
+- **Narration is generated and disabled.** Two full text-to-speech passes
+  were produced and I judged both wrong for the interface, not merely low
+  quality. Every narrated line has an on-screen equivalent, so nothing is
+  lost with it off (`web/public/audio/PROVENANCE.md`).
+- **No screenshots.** When added they will come from the demo configuration,
+  since the real content names an identifiable third party.
+- **Frontend rendering is unmeasured.** The audio gain chain was measured
+  (roughly −41 LUFS at output before correction, against a −26 target) and a
+  5.5-second startup delay was measured and fixed, but no profiling of React
+  render cost or bundle parse time was done.
+
+## Stack
+
+- Python 3.12, FastAPI, SQLAlchemy 2 (async), Alembic, Pydantic v2
+- Postgres, with asyncpg
+- React 19, TypeScript, Vite, Vitest
+- Caddy, Docker Compose
+- pytest, with a separate Postgres integration tier
+- OpenAPI generated from the Pydantic models, then `openapi-typescript` for
+  the client types
+
+Roughly 4,600 lines of server code against 7,800 lines of server tests, and
+8,000 lines of client code against 3,600 lines of client tests.
 
 ## Licence
 
-MIT. See `LICENSE`. Copyright (c) 2026 Kritish.
+MIT — see `LICENSE`. Copyright (c) 2026 Kritish.
 
-The four music tracks under `web/public/audio/music/` are the author's own
-Gemini-generated output, redistributed under this same licence. See
-`web/public/audio/PROVENANCE.md` for the full provenance of the audio
-assets, including the narration files (currently unused — see above).
-
-Fonts (Archivo, IBM Plex Sans, IBM Plex Mono) are licensed under the SIL
-Open Font License, Version 1.1 — confirmed against
-[IBM/plex's `LICENSE.txt`](https://github.com/IBM/plex/blob/master/LICENSE.txt)
-and [google/fonts' `ofl/archivo/OFL.txt`](https://github.com/google/fonts/blob/main/ofl/archivo/OFL.txt).
+The four music tracks under `web/public/audio/music/` are generated output I
+produced, redistributed under the same licence; provenance for every audio
+asset is in `web/public/audio/PROVENANCE.md`. Archivo and IBM Plex are under
+the SIL Open Font License 1.1, confirmed against
+[IBM/plex](https://github.com/IBM/plex/blob/master/LICENSE.txt) and
+[google/fonts](https://github.com/google/fonts/blob/main/ofl/archivo/OFL.txt).
