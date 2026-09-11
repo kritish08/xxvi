@@ -219,19 +219,37 @@ export function SimonSays({ seed, params, difficulty, onFinish }: GameProps) {
     [phase, sequence, onFinish, attemptsLeft],
   );
 
+  // The latest `press`, readable from an event handler that never
+  // re-subscribes. Assigned during render, NOT in an effect: React commits
+  // the DOM before it flushes passive effects, so for the width of that gap
+  // the window listener would still be holding the PREVIOUS closure. That
+  // closure captured the previous `phase`, so a key pressed in that window
+  // hits `if (phase !== "repeat") return` and is silently dropped -- at the
+  // exact moment the screen has started saying "your turn" and is inviting
+  // the press. Narrow on a fast machine, wide on a slow one: it turned up
+  // as a CI-only failure where all three keystrokes of a 3-length sequence
+  // vanished and `onFinish` was never called.
+  const pressRef = useRef(press);
+  pressRef.current = press;
+
   // Keyboard is the supported path (§9) — the on-screen faces exist for
   // the person watching the screen share, not as the primary input.
+  //
+  // Empty deps on purpose. This used to be `[press]`, which re-subscribed
+  // on every phase change and every spent attempt; the listener is now
+  // registered once for the life of the component and reads the current
+  // handler through the ref above.
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       const face = faceFromEvent(event);
       if (face !== null) {
         event.preventDefault();
-        press(face);
+        pressRef.current(face);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [press]);
+  }, []);
 
   // Optional, additive: a controller reports the same `press(face)` the
   // keyboard does, edge-triggered by the hook itself so a held pad button

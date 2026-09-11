@@ -143,4 +143,34 @@ describe("SimonSays", () => {
     expect(button.className).toContain("is-right");
     await waitFor(() => expect(button.className).not.toContain("is-right"), { timeout: 3000 });
   });
+
+  it("registers its keydown listener once, not on every phase change", async () => {
+    // Guards a CI-only failure whose symptom was all three keystrokes of a
+    // 3-length sequence vanishing and onFinish never being called.
+    //
+    // The listener used to re-subscribe on `[press]`, and `press` is a
+    // useCallback keyed on [phase, sequence, onFinish, attemptsLeft] — so it
+    // changed identity on every phase change. React commits the DOM BEFORE
+    // it flushes passive effects, so for the width of that gap the window
+    // still held the previous closure, which captured the previous `phase`
+    // and dropped the press on `if (phase !== "repeat") return`. Exactly at
+    // the moment the screen had started saying "your turn".
+    //
+    // The race itself is a sub-millisecond window that cannot be triggered
+    // deterministically. Its cause can: count the subscriptions.
+    // vi.spyOn calls through by default, so the real listener is still
+    // registered and the component keeps working normally.
+    const spy = vi.spyOn(window, "addEventListener");
+
+    try {
+      const onFinish = vi.fn();
+      render(<SimonSays seed="s" params={{ length: 3 }} onFinish={onFinish} />);
+      await waitFor(() => expect(screen.getByText("your turn")).toBeDefined(), { timeout: 5000 });
+
+      const keydowns = spy.mock.calls.filter((c) => c[0] === "keydown").length;
+      expect(keydowns).toBe(1);
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });
