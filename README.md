@@ -594,11 +594,3 @@ asset is in `web/public/audio/PROVENANCE.md`. Archivo and IBM Plex are under
 the SIL Open Font License 1.1, confirmed against
 [IBM/plex](https://github.com/IBM/plex/blob/master/LICENSE.txt) and
 [google/fonts](https://github.com/google/fonts/blob/main/ofl/archivo/OFL.txt).
-
----
-
-<div align="center">
-
-*Built for one evening. Written so it could survive one.*
-
-</div>
