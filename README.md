@@ -99,7 +99,7 @@ flowchart LR
         Hub["realtime/hub.py\nin-memory, single process"]
     end
 
-    subgraph DB[("🐘 Postgres")]
+    subgraph DB["🐘 Postgres"]
         Runs[("runs\nversion = CAS token")]
         Ledger[("code_releases\nUNIQUE run_id, reward_id")]
         Tokens[("consumed_tokens\nUNIQUE run_id, nonce")]
